@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tau Kappa Epsilon — Omicron Nu</title>
+<meta name="description" content="Tau Kappa Epsilon's Omicron Nu chapter at Florida Tech, supporting St. Jude Children's Research Hospital.">
+<script src="./support.js"></script>
+<template id="__bundler_thumbnail" data-bg-color="#AD2624">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#AD2624"/>
+    <text x="600" y="440" font-family="Arial, sans-serif" font-weight="900" font-size="220" fill="#fff" text-anchor="middle">TKE</text>
+  </svg>
+</template>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&amp;display=swap">
+<link rel="stylesheet" href="_ds/modernist-237b31ba-4c43-4a7f-9097-77373dc8a08d/styles.css">
+<script src="_ds/modernist-237b31ba-4c43-4a7f-9097-77373dc8a08d/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+  /* Modernist tokens re-pointed to the TKE brand palette: TKE Cherry (Pantone
+     1805C #AD2624), TKE Gray (Cool Gray 9C #919194) and black; Lato is TKE's
+     primary typeface. Ramps stay on the system's tonal structure. */
+  :root {
+    --color-bg: #f4f4f5;
+    --color-surface: #e9e9eb;
+    --color-text: #131315;
+    --color-accent: #AD2624;
+    --color-accent-2: #F15F43;
+    --color-divider: color-mix(in srgb, #131315 40%, transparent);
+    --color-neutral-100: #f6f6f7; --color-neutral-200: #e9e9eb; --color-neutral-300: #d5d5d8;
+    --color-neutral-400: #b9b9bd; --color-neutral-500: #919194; --color-neutral-600: #747478;
+    --color-neutral-700: #5a5a5e; --color-neutral-800: #3f3f43; --color-neutral-900: #242428;
+    --color-accent-100: #fbeeed; --color-accent-200: #f5d6d4; --color-accent-300: #eab3b0;
+    --color-accent-400: #d97a76; --color-accent-500: #c3332f; --color-accent-600: #96201e;
+    --color-accent-700: #7c1a18; --color-accent-800: #5c1412; --color-accent-900: #3d0f0e;
+    --color-accent-2-100: #fdeeeb; --color-accent-2-200: #fbd8d0; --color-accent-2-300: #f8b6a7;
+    --color-accent-2-400: #f4886f; --color-accent-2-500: #F15F43; --color-accent-2-600: #cf4630;
+    --color-accent-2-700: #a63424; --color-accent-2-800: #79261a; --color-accent-2-900: #4e1a12;
+    --font-heading: "Lato", system-ui, sans-serif;
+    --font-body: "Lato", system-ui, sans-serif;
+  }
+  body { margin: 0; background: var(--color-bg); font-family: var(--font-body); color: var(--color-text); -webkit-font-smoothing: antialiased; }
+  a { color: var(--color-accent-700); text-decoration: none; }
+  a:hover { color: var(--color-accent); }
+  @keyframes tkePulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+  @keyframes tkeRise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column">
+
+<header style="position:sticky;top:0;z-index:40;background:var(--color-accent);color:#fff;display:flex;align-items:stretch;justify-content:space-between;gap:32px;padding:0 24px 0 0;box-shadow:var(--shadow-md)">
+  <div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:16px;cursor:pointer;padding:12px 24px;flex-shrink:0">
+    <img src="./4-ms3z5b1p-r5cl.png" alt="Tau Kappa Epsilon Houseplate" style="display: block; width: 67px; height: 65px; padding: 6px; background-color: #FFFFFF00">
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <span style="font:900 17px/1 var(--font-heading);letter-spacing:.02em;white-space:nowrap">TAU KAPPA EPSILON</span>
+      <span style="font:400 11px/1 var(--font-body);letter-spacing:.16em;color:rgba(255,255,255,.78);white-space:nowrap">OMICRON NU · FLORIDA TECH</span>
+    </div>
+  </div>
+
+  <nav style="display:flex;align-items:stretch;flex-wrap:nowrap;justify-content:flex-end;gap:2px;min-width:0">
+    <div onClick="{{ goHome }}" style="position:relative;display:flex;align-items:center;padding:0 clamp(8px,1.1vw,16px);cursor:pointer;white-space:nowrap;font:700 clamp(11px,1.05vw,12.5px)/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase" style-hover="background:rgba(0,0,0,.14)">HOME
+      <sc-if value="{{ atHome }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;left:8px;right:8px;bottom:12px;height:3px;background:#fff"></span></sc-if>
+    </div>
+    <div onClick="{{ goPhil }}" style="position:relative;display:flex;align-items:center;padding:0 clamp(8px,1.1vw,16px);cursor:pointer;white-space:nowrap;font:700 clamp(11px,1.05vw,12.5px)/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase" style-hover="background:rgba(0,0,0,.14)">PHILANTHROPY
+      <sc-if value="{{ atPhil }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:8px;right:8px;bottom:12px;height:3px;background:#fff"></span></sc-if>
+    </div>
+    <div onClick="{{ goStream }}" style="position:relative;display:flex;align-items:center;gap:8px;padding:0 clamp(8px,1.1vw,16px);cursor:pointer;white-space:nowrap;font:700 clamp(11px,1.05vw,12.5px)/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase" style-hover="background:rgba(0,0,0,.14)">STREAM
+      <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}"><span style="width:7px;height:7px;background:#fff;animation:tkePulse 1.6s infinite"></span></sc-if>
+      <sc-if value="{{ atStream }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:8px;right:8px;bottom:12px;height:3px;background:#fff"></span></sc-if>
+    </div>
+    <div onClick="{{ goAbout }}" style="position:relative;display:flex;align-items:center;padding:0 clamp(8px,1.1vw,16px);cursor:pointer;white-space:nowrap;font:700 clamp(11px,1.05vw,12.5px)/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase" style-hover="background:rgba(0,0,0,.14)">CHAPTER
+      <sc-if value="{{ atAbout }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:8px;right:8px;bottom:12px;height:3px;background:#fff"></span></sc-if>
+    </div>
+        <a href="https://www.stjude.org/" target="_blank" rel="noopener" style="align-self:center;flex-shrink:0;margin-left:10px;background:#fff;color:var(--color-accent-700);padding:12px clamp(12px,1.4vw,20px);white-space:nowrap;font:700 12.5px/1 var(--font-body);letter-spacing:.1em;text-transform:uppercase" style-hover="background:var(--color-accent-100)">DONATE</a>
+  </nav>
+</header>
+
+<main style="flex:1">
+
+<!-- ======================= HOME ======================= -->
+<sc-if value="{{ atHome }}" hint-placeholder-val="{{ true }}">
+<div>
+  <section style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);border-bottom:2px solid var(--color-divider)">
+    
+    
+  <div style="padding:72px 48px 56px;border-right:2px solid var(--color-divider);display:flex;flex-direction:column;gap:28px">
+      
+      <h1 style="margin:0;font:900 clamp(44px,5.6vw,84px)/.96 var(--font-heading);letter-spacing:-.03em;text-wrap:balance">We fundraise so kids<br>don't have to pay<br>for cancer care.</h1>
+      <p style="margin:0;max-width:52ch;font:400 18px/1.55 var(--font-body);color:var(--color-neutral-800);text-wrap:pretty">Tau Kappa Epsilon has raised money for St. Jude Children's Research Hospital since 1998. At Florida Tech, the Fraters of Omicron Nu do it with a Twitch stream, a list of goals, and a lot of hours on camera.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        <a href="https://fundraising.stjude.org/site/TR/TKE/TKE?pg=entry&amp;fr_id=162408" target="_blank" rel="noopener" class="btn btn-primary">Donate to St. Jude</a>
+        <a href="https://www.twitch.tv/taukappaepsilon_on" target="_blank" rel="noopener" class="btn btn-secondary">Watch the stream</a>
+      </div>
+    </div><div style="position:relative;width:100%;height:100%;min-height:340px;overflow:hidden">
+      <image-slot id="tke-hero-1" shape="rect" placeholder="Marathon stream setup"></image-slot>
+    </div>
+    </section>
+
+  <section style="background:var(--color-accent);color:#fff;padding:56px 48px 48px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:24px;border-bottom:2px solid rgba(255,255,255,.35);padding-bottom:20px">
+      <span style="font:700 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase">Raised for St. Jude · 2025–2026</span>
+      
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap;margin-top:28px">
+      <div style="font:900 clamp(72px,13vw,190px)/.84 var(--font-heading);letter-spacing:-.045em;font-variant-numeric:tabular-nums">{{ raisedDisplay }}</div>
+      
+    </div>
+    <div style="margin-top:32px;height:14px;background:rgba(0,0,0,.22);position:relative">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:{{ barWidth }};background:#fff"></div>
+      <div style="position:absolute;left:78.5%;top:-10px;bottom:-10px;width:2px;background:rgba(255,255,255,.55)"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;margin-top:44px;background:rgba(255,255,255,.3)">
+      <div style="background:var(--color-accent);padding:24px 24px 8px">
+        <div style="font:900 46px/1 var(--font-heading)">2</div>
+        <div style="margin-top:10px;font:400 14px/1.45 var(--font-body);color:rgba(255,255,255,.85);max-width:26ch">Fraters sent to St. Jude Next-Gen 2026 in Memphis</div>
+      </div>
+      <div style="background:var(--color-accent);padding:24px 24px 8px">
+        <div style="font:900 46px/1 var(--font-heading)">127%</div>
+        <div style="margin-top:10px;font:400 14px/1.45 var(--font-body);color:rgba(255,255,255,.85);max-width:26ch">Of the chapter's $10,000 annual commitment</div>
+      </div>
+      <div style="background:var(--color-accent);padding:24px 24px 8px">
+        <div style="font:900 46px/1 var(--font-heading)">100%</div>
+        <div style="margin-top:10px;font:400 14px/1.45 var(--font-body);color:rgba(255,255,255,.85);max-width:26ch">Of donations go directly to St. Jude, never through the chapter</div>
+      </div>
+    </div>
+    <img src="assets/stjude-tke-partnership-white.png" alt="St. Jude Children's Research Hospital and Tau Kappa Epsilon partnership lockup" style="display: block; margin-top: 44px; width: 223px; height: 88px">
+  </section>
+
+  <section style="padding:64px 48px;border-bottom:2px solid var(--color-divider)">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:32px">
+      <h2 style="margin:0;font:900 clamp(30px,3.4vw,46px)/1 var(--font-heading);letter-spacing:-.02em">The stream</h2>
+      <div onClick="{{ goStream }}" style="cursor:pointer;font:700 12.5px/1 var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);border-bottom:2px solid var(--color-accent)">Open stream page</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.4fr minmax(0,1fr);gap:2px;background:var(--color-divider)">
+      <div style="background:#000;aspect-ratio:16/9;position:relative;display:flex;align-items:center;justify-content:center">
+        <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+          <iframe src="{{ playerSrc }}" allowfullscreen="true" title="Twitch player" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
+        </sc-if>
+        <sc-if value="{{ isOffline }}" hint-placeholder-val="{{ true }}">
+          <div style="text-align:left;padding:40px;color:#fff;width:100%">
+            <div style="display:inline-flex;align-items:center;gap:10px;border:2px solid rgba(255,255,255,.4);padding:8px 14px;font:700 11.5px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.75)"><span style="width:7px;height:7px;background:rgba(255,255,255,.5)"></span>Offline</div>
+            
+            <div style="margin-top:14px;font:400 15px/1.5 var(--font-body);color:rgba(255,255,255,.7)">24-hour Philanthropy marathon</div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="min-width:0;overflow-wrap:anywhere;background:var(--color-surface);padding:32px 28px;display:flex;flex-direction:column;gap:20px">
+        <span style="font: 700 12px/1 var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--color-accent-700); overflow-wrap: anywhere; font-family: Arial">twitch.tv/taukappaepsilon_on</span>
+        <p style="margin:0;font:400 16px/1.55 var(--font-body);color:var(--color-neutral-800);text-wrap:pretty">Every dollar pledged on stream is added to our goal tracker; We read donors on air, take game requests, and compete in live activities when goals are hit.</p>
+        <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px">
+          <a href="https://www.twitch.tv/taukappaepsilon_on" target="_blank" rel="noopener" class="btn btn-primary btn-block" style="justify-content:flex-start">Follow on Twitch</a>
+          <a href="https://www.stjude.org/" target="_blank" rel="noopener" class="btn btn-ghost btn-block" style="justify-content:flex-start">Give without watching</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding:64px 48px;border-bottom:2px solid var(--color-divider)">
+    <h2 style="margin:0 0 32px;font:900 clamp(30px,3.4vw,46px)/1 var(--font-heading);letter-spacing:-.02em">Upcoming Events<br></h2>
+    <table class="table">
+      <thead><tr><th style="width:16%">Date</th><th style="width:34%">Event</th><th style="width:28%">Where</th></tr></thead>
+      <tbody>
+        <tr><td>TBD</td><td>Fall 2026 - St. Jude 24 hour livestream</td><td>Twitch</td></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+        <tr></tr>
+      </tbody>
+    </table>
+  </section>
+
+  
+</div>
+</sc-if>
+
+<!-- ======================= PHILANTHROPY ======================= -->
+<sc-if value="{{ atPhil }}" hint-placeholder-val="{{ false }}">
+<div>
+  <section style="padding:72px 48px 56px;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:56px">
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <span style="font:700 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent-700)">Philanthropy</span>
+      
+      <h1 style="margin:0;font:900 clamp(40px,5vw,72px)/.98 var(--font-heading);letter-spacing:-.03em">St. Jude Children's Research Hospital</h1>
+      <p style="margin:0;max-width:56ch;font:400 18px/1.55 var(--font-body);color:var(--color-neutral-800);text-wrap:pretty">Families at St. Jude never receive a bill for treatment, travel, housing, or food. That model runs on donors, and St. Jude has been Tau Kappa Epsilon's national philanthropy for more than two decades. Omicron Nu's share is raised almost entirely on stream and through community donations.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px">
+        <a href="https://www.stjude.org/" target="_blank" rel="noopener" class="btn btn-primary">Give now</a>
+        
+      </div>
+    </div>
+    <div class="grayscale" style="min-height:340px"><image-slot id="tke-phil" shape="rect" placeholder="Photo — check presentation or marathon stream"></image-slot></div>
+  </section>
+
+  <section style="padding:0;border-bottom:2px solid var(--color-divider);background:#fff;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:0;align-items:center">
+    <img src="assets/tke-10-in-10.png" alt="TKE 10 Million in 10 Years commitment — Bone Marrow Transplantation &amp; Cellular Therapy Research Floor" style="display:block;width:100%;height:auto;padding:40px 48px;box-sizing:border-box">
+    <div style="padding:48px 48px 48px 0;border-left:2px solid var(--color-divider);padding-left:48px">
+      
+      <p style="margin:20px 0 0;max-width:44ch;font:900 clamp(24px,2.6vw,36px)/1.08 var(--font-heading);letter-spacing:-.02em;color:var(--color-text)">$10 million in ten years, toward a research floor with our name on it.</p>
+      <p style="margin:18px 0 0;max-width:52ch;font:400 16px/1.55 var(--font-body);color:var(--color-neutral-800)">Every dollar Omicron Nu raises counts toward TKE's 10 in 10 commitment to the Bone Marrow Transplantation &amp; Cellular Therapy Research Floor at St. Jude.</p>
+    </div>
+  </section>
+
+  <section style="padding:56px 48px;border-bottom:2px solid var(--color-divider)">
+    <h2 style="margin:0 0 8px;font:900 clamp(28px,3.2vw,42px)/1 var(--font-heading);letter-spacing:-.02em">Donation totals<br></h2>
+    
+    <table class="table">
+      <thead><tr><th style="width:20%">Year</th><th style="width:22%">Raised</th><th style="width:20%">Goal</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>2025–2026</strong></td><td><strong>$12,745</strong></td><td>$10,000</td><td>127% of goal - 2 Fraters sent to St. Jude Next-Gen 2026</td></tr>
+        <tr><td>2024–2025</td><td><strong>$11,000</strong></td><td>$5,000<br></td><td><p style="margin: 0">220% of goal - One frater sent to St. Jude Next-Gen 2025</p></td></tr>
+        <tr></tr>
+        <tr></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section style="padding:56px 48px;border-bottom:2px solid var(--color-divider)">
+    <h2 style="margin:0 0 32px;font:900 clamp(28px,3.2vw,42px)/1 var(--font-heading);letter-spacing:-.02em">Ways to give</h2>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+      <div class="card elev-sm" style="display:flex;flex-direction:column;gap:12px">
+        <div class="card-kicker">Primary portal</div>
+        <div class="card-title">St. Jude fundraising page</div>
+        <div class="card-body">Our chapter's Tribute page. Donations are receipted by St. Jude directly and credited to Omicron Nu's total.</div>
+        <a href="https://www.stjude.org/" target="_blank" rel="noopener" class="btn btn-primary" style="margin-top:auto;justify-content:flex-start">Open portal</a>
+      </div>
+      <div class="card elev-sm" style="display:flex;flex-direction:column;gap:12px">
+        <div class="card-kicker">On stream</div>
+        <div class="card-title">24 Hour St. Jude Livestream<br></div>
+        <div class="card-body">Donate during a broadcast and it hits the on-screen goal board in seconds. Donors get read on air.</div>
+        <a href="https://www.twitch.tv/taukappaepsilon_on" target="_blank" rel="noopener" class="btn btn-secondary" style="margin-top:auto;justify-content:flex-start">Give on stream</a>
+      </div>
+      
+    </div>
+  </section>
+
+  
+</div>
+</sc-if>
+
+<!-- ======================= STREAM ======================= -->
+<sc-if value="{{ atStream }}" hint-placeholder-val="{{ false }}">
+<div>
+  <section style="background:#000;padding:0;border-bottom:2px solid var(--color-divider)">
+    <div style="display:grid;grid-template-columns:{{ streamCols }};min-height:min(72vh,660px)">
+      <div style="position:relative;background:#0d0d0d;display:flex;align-items:center;justify-content:center">
+        <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+          <iframe src="{{ playerSrc }}" allowfullscreen="true" title="Twitch player" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>
+        </sc-if>
+        <sc-if value="{{ isOffline }}" hint-placeholder-val="{{ true }}">
+          
+        </sc-if>
+      <div style="width:100%;max-width:760px;padding:56px 48px;color:#fff">
+            <div style="display:inline-flex;align-items:center;gap:10px;border:2px solid rgba(255,255,255,.35);padding:9px 15px;font:700 11.5px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7)"><span style="width:7px;height:7px;background:rgba(255,255,255,.45)"></span>Currently offline</div>
+            
+            <p style="margin:20px 0 0;max-width:48ch;font:400 17px/1.55 var(--font-body);color:rgba(255,255,255,.7)">Follow the channel and Twitch will tell you the moment we go live.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:28px">
+              <a href="https://www.twitch.tv/taukappaepsilon_on" target="_blank" rel="noopener" class="btn btn-primary">Follow on Twitch</a>
+              
+            </div>
+          </div></div>
+      <sc-if value="{{ chatOn }}" hint-placeholder-val="{{ true }}">
+        <div style="border-left:2px solid rgba(255,255,255,.18);background:#111;display:flex;flex-direction:column">
+          <div style="padding:16px 20px;border-bottom:2px solid rgba(255,255,255,.18);font:700 11.5px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.65)">Stream chat</div>
+          <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+            <iframe src="{{ chatSrc }}" title="Twitch chat" style="flex:1;width:100%;border:0"></iframe>
+          </sc-if>
+          <sc-if value="{{ isOffline }}" hint-placeholder-val="{{ true }}">
+            <div style="flex:1;display:flex;align-items:center;padding:28px 22px;color:rgba(255,255,255,.45);font:400 14px/1.6 var(--font-body)">Chat opens when the broadcast starts.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+
+  <section style="padding:56px 48px;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px">
+    
+    <div>
+      <h2 style="margin:0 0 24px;font:900 clamp(28px,3.2vw,42px)/1 var(--font-heading);letter-spacing:-.02em">How the our goals work</h2>
+      <div style="display:flex;flex-direction:column;gap:2px;background:var(--color-divider)">
+        <div style="background:var(--color-bg);padding:20px 0 20px 20px;display:flex;gap:18px"><span style="font:900 18px/1.3 var(--font-heading);color:var(--color-accent)">01</span><p style="margin:0;font:400 15px/1.55 var(--font-body);color:var(--color-neutral-800)">Donate through the St. Jude portal during a broadcast.</p></div>
+        <div style="background:var(--color-bg);padding:20px 0 20px 20px;display:flex;gap:18px"><span style="font:900 18px/1.3 var(--font-heading);color:var(--color-accent)">02</span><p style="margin:0;font:400 15px/1.55 var(--font-body);color:var(--color-neutral-800)">Your name and message appear on the overlay and get read on air.</p></div>
+        <div style="background:var(--color-bg);padding:20px 0 20px 20px;display:flex;gap:18px"><span style="font:900 18px/1.3 var(--font-heading);color:var(--color-accent)">03</span><p style="margin:0;font:400 15px/1.55 var(--font-body);color:var(--color-neutral-800)">Each stream has a set of donation goals, leading to on stream events like getting our heads shaved!</p></div>
+      </div>
+    </div>
+  </section>
+</div>
+</sc-if>
+
+<!-- ======================= CHAPTER ======================= -->
+<sc-if value="{{ atAbout }}" hint-placeholder-val="{{ false }}">
+<div>
+  <section style="padding:72px 48px 56px;border-bottom:2px solid var(--color-divider);display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:56px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <span style="font:700 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:var(--color-accent-700)">The chapter</span>
+      <h1 style="margin:0;font:900 clamp(40px,5vw,72px)/.98 var(--font-heading);letter-spacing:-.03em">Omicron Nu at Florida Tech</h1>
+      <p style="margin:0;max-width:56ch;font:400 18px/1.55 var(--font-body);color:var(--color-neutral-800);text-wrap:pretty">Our mission is to aid men in their mental, moral and social development for life. In Melbourne that means engineers, aviators, and marine biologists who show up for each other — and for a hospital nine hundred miles away.</p>
+      
+    </div>
+    <div class="grayscale" style="min-height:380px"><image-slot id="tke-chapter" shape="rect" placeholder="Photo — chapter group shot"></image-slot></div>
+  </section>
+
+  
+
+  <section style="padding:56px 48px;border-bottom:2px solid var(--color-divider)">
+    <h2 style="margin:0 0 32px;font:900 clamp(28px,3.2vw,42px)/1 var(--font-heading);letter-spacing:-.02em">Gallery</h2>
+    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);grid-template-rows:220px 220px;gap:2px;background:var(--color-divider)">
+      <div class="grayscale" style="grid-row:span 2"><image-slot id="tke-g1" shape="rect" placeholder="Marathon stream setup"></image-slot></div>
+      <div class="grayscale"><image-slot id="tke-g2" shape="rect" placeholder="5K morning"></image-slot></div>
+      <div class="grayscale"><image-slot id="tke-g3" shape="rect" placeholder="Check presentation"></image-slot></div>
+      <div class="grayscale"><image-slot id="tke-g4" shape="rect" placeholder="Next-Gen in Memphis"></image-slot></div>
+      <div class="grayscale"><image-slot id="tke-g5" shape="rect" placeholder="Bid day"></image-slot></div>
+    </div>
+  </section>
+</div>
+</sc-if>
+
+</main>
+
+<footer style="background:var(--color-neutral-900);color:#fff;padding:56px 48px 40px">
+  <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:40px;padding-bottom:36px;border-bottom:2px solid rgba(255,255,255,.2)">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      
+      <div style="font:900 16px/1.2 var(--font-heading);letter-spacing:.02em">TAU KAPPA EPSILON<br><span style="font:400 12px/1.6 var(--font-body);letter-spacing:.14em;color:rgba(255,255,255,.6)">OMICRON NU CHAPTER</span></div>
+      <div style="font:400 13.5px/1.6 var(--font-body);color:rgba(255,255,255,.6)">Florida Institute of Technology<br>Melbourne, Florida</div><img src="assets/stjude-tke-partnership-white.png" alt="St. Jude and Tau Kappa Epsilon partnership lockup" style="display:block;margin-top:10px;width:100%;max-width:230px;height:auto">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:700 11px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5)">Give</span>
+      <a href="https://www.stjude.org/" target="_blank" rel="noopener" style="color:#fff;font:400 14px/1.4 var(--font-body)">St. Jude portal</a>
+      <a href="https://www.twitch.tv/taukappaepsilon_on" target="_blank" rel="noopener" style="color:#fff;font:400 14px/1.4 var(--font-body)">24-Hr Livestream</a>
+      
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:700 11px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5)">Follow</span>
+      <a href="https://www.twitch.tv/taukappaepsilon_on" target="_blank" rel="noopener" style="color:#fff;font:400 14px/1.4 var(--font-body)">Twitch</a>
+      <a href="https://www.linkedin.com/company/tke-on/" target="_blank" rel="noopener" style="color:#fff;font:400 14px/1.4 var(--font-body)">LinkedIn</a>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font:700 11px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5)">Chapter</span>
+      <div onClick="{{ goAbout }}" style="cursor:pointer;font:400 14px/1.4 var(--font-body)">Officers</div>
+      
+    </div>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;padding-top:24px;font:400 12px/1.5 var(--font-body);color:rgba(255,255,255,.45)">
+    <span>© 2026 Omicron Nu Chapter of Tau Kappa Epsilon. Not an official publication of Florida Institute of Technology or St. Jude Children's Research Hospital.</span>
+    <span>Better Men for a Better World · #IAMTKE</span>
+  </div>
+</footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;streamLive&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Stream&quot;},&quot;showChat&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Stream&quot;},&quot;raisedAmount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:12745,&quot;min&quot;:0,&quot;max&quot;:100000,&quot;step&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Fundraising&quot;},&quot;goalAmount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:10000,&quot;min&quot;:1000,&quot;max&quot;:100000,&quot;step&quot;:500,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Fundraising&quot;}}">
+class Component extends DCLogic {
+  state = { page: "home", raised: 0 };
+
+  componentDidMount() { this.animate(); }
+
+  animate() {
+    clearInterval(this._timer);
+    const target = this.props.raisedAmount ?? 12745;
+    const dur = 1500, t0 = Date.now();
+    this._timer = setInterval(() => {
+      const p = Math.min(1, (Date.now() - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      this.setState({ raised: Math.round(target * eased) });
+      if (p >= 1) clearInterval(this._timer);
+    }, 32);
+  }
+
+  componentWillUnmount() { clearInterval(this._timer); }
+
+  go(page) {
+    return () => {
+      this.setState({ page: page, raised: 0 });
+      window.scrollTo({ top: 0, behavior: "instant" });
+      if (page === "home") this.animate();
+    };
+  }
+
+  renderVals() {
+    const p = this.state.page;
+    const goal = this.props.goalAmount ?? 10000;
+    const target = this.props.raisedAmount ?? 12745;
+    const live = this.props.streamLive ?? false;
+    const chat = this.props.showChat ?? true;
+    const parents = ["tkeon.fit", "www.tkeon.fit", "localhost", "127.0.0.1"].map(h => "parent=" + h).join("&");
+    return {
+      atHome: p === "home", atPhil: p === "philanthropy", atStream: p === "stream",
+      atAbout: p === "about",
+      goHome: this.go("home"), goPhil: this.go("philanthropy"), goStream: this.go("stream"),
+      goAbout: this.go("about"),
+      isLive: live, isOffline: !live, chatOn: chat,
+      streamCols: chat ? "1fr minmax(280px,340px)" : "1fr",
+      playerSrc: "https://player.twitch.tv/?channel=taukappaepsilon_on&" + parents,
+      chatSrc: "https://www.twitch.tv/embed/taukappaepsilon_on/chat?darkpopout&" + parents,
+      raisedDisplay: "$" + this.state.raised.toLocaleString("en-US"),
+      pctDisplay: Math.round((target / goal) * 100) + "%",
+      barWidth: Math.min(100, (this.state.raised / target) * 78.5) + "%",
+      officers: [
+        { role: "Prytanis", name: "Frater Placeholder", detail: "President" },
+        { role: "Epiprytanis", name: "Frater Placeholder", detail: "Vice President" },
+        { role: "Philanthropy Chair", name: "Frater Placeholder", detail: "St. Jude lead" },
+        { role: "Crysophylos", name: "Frater Placeholder", detail: "Treasurer" },
+        { role: "Grammateus", name: "Frater Placeholder", detail: "Secretary" },
+        { role: "Hypophetes", name: "Frater Placeholder", detail: "Chaplain" },
+        { role: "Recruitment Chair", name: "Frater Placeholder", detail: "Rush" },
+        { role: "Stream Director", name: "Frater Placeholder", detail: "Broadcast & overlays" }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
