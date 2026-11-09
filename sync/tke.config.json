@@ -1,0 +1,11 @@
+{
+  "_help": "URLs for the TKE national module. Selectors are tried in order (comma = any of). Run the 'Dashboard sync' workflow by hand after changing this file.",
+  "loginUrl": "FILL_ME",
+  "kraUrl": "FILL_ME",
+  "selectors": {
+    "username": "input[autocomplete=username], input[type=email], input[name*=user i], input[id*=user i], input[name*=email i], input[id*=email i], input[name*=login i]",
+    "password": "input[type=password]",
+    "submit": "button[type=submit], input[type=submit], button:has-text(\"Log in\"), button:has-text(\"Sign in\"), button:has-text(\"Login\")"
+  },
+  "waitForTableSeconds": 45
+}

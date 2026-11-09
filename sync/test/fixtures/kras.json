@@ -1,0 +1,27 @@
+{
+  "_about": "Rows from nationals' KRA page on Oct 30, 2026 (KRAs 28/90, 2 of 9 met; required 3/11; bonus 0/10). Format: [name, result, goal, points, out of, met].",
+  "kra": [
+    ["Initiates", "0", "15", 0, 25, false],
+    ["Finances", "$0.00", "$0.00", 15, 15, true],
+    ["RLC Attendance", "0", "12", 0, 15, false],
+    ["Risk Mgmt Education", "29", "29", 10, 10, true],
+    ["EDU.TKE.org Usage", "27", "150", 0.9, 5, false],
+    ["Philanthropy", "$0.00", "$8,000.00", 0, 5, false],
+    ["Phired Up", "0", "15", 0, 5, false],
+    ["Service", "520.00", "1300", 2, 5, false],
+    ["St. Jude Dollars", "$165.00", "$8,000.00", 0.1, 5, false]
+  ],
+  "required": [
+    ["Academics", "N/A", "3", 0, 3, false],
+    ["Alumni Engagement", "4", "1", 3, 3, true],
+    ["Annual Report", "False", "True", 0, 2, false],
+    ["Ritual Equip. Check", "False", "True", 0, 2, false],
+    ["Chapter Advisor", "N/A", "True", 0, 1, false]
+  ],
+  "bonus": [
+    ["Forum Attendance", "0", "15", 0, 3, false],
+    ["Foundation Donors", "6", "15", 0, 3, false],
+    ["Money Vehicle", "0", "", 0, 3, false],
+    ["Membership Growth", "N/A", "1", 0, 1, false]
+  ]
+}

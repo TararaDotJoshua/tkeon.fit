@@ -1,2 +1,8 @@
 .DS_Store
 Thumbs.db
+
+# Dashboard sync
+sync/node_modules/
+sync/debug/
+sync/.shots/
+.env

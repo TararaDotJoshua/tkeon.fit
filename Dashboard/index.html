@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omicron Nu dashboard</title>
+<meta name="description" content="Key Result Areas and this week's events for the Omicron Nu Chapter of Tau Kappa Epsilon.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#25272B">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<script>if (/[?&]tv(=|&|$)/.test(location.search)) document.documentElement.className = 'tv';</script>
+<style>
+  :root {
+    --bg: #25272B;
+    --panel: #2D3035;
+    --panel-2: #353840;
+    --track: #3E424A;
+    --line: #42464E;
+    --text: #F3F3F4;
+    --muted: #A9ADB4;
+    --faint: #80858D;
+    --cherry: #B3203A;      /* TKE cherry: the only brand accent */
+    --met: #8CC08F;         /* met */
+    --behind: #E3A857;      /* behind / not met */
+    --none: #80858D;        /* not reported */
+    --radius: 0.5rem;
+    --font-num: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+    --font-text: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+  /* TV: everything scales off the viewport so 1920x1080 is one fixed layout.
+     The vh term only bites on screens shorter than 16:9. */
+  html.tv { font-size: clamp(14px, min(1.05vw, 1.87vh), 40px); cursor: none; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.4 var(--font-text); }
+  html.tv, html.tv body { height: 100%; overflow: hidden; }
+  h1, h2, h3 { font-family: var(--font-num); font-weight: 600; letter-spacing: 0.01em; margin: 0; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* Status colours, used by pills, bars, dots and strip segments. */
+  .s-met { --sc: var(--met); }
+  .s-ontrack { --sc: var(--met); }
+  .s-behind { --sc: var(--behind); }
+  .s-none { --sc: var(--none); }
+
+  /* ---------- Frame ---------- */
+  #stage { min-height: 100%; }
+  html.tv #stage { height: 100%; display: flex; flex-direction: column; padding: 1.4rem 2.2rem 1.1rem; }
+  .top { display: flex; align-items: center; gap: 0.75rem 1.25rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  html.tv .top { padding: 0 0 1rem; flex-wrap: nowrap; }
+  .brand { display: flex; align-items: center; gap: 0.85rem; min-width: 0; flex: 1 1 auto; }
+  .logo { display: block; height: 2.6rem; width: auto; flex: none; }
+  .logo-fallback { display: inline-flex; align-items: center; justify-content: center; flex: none; height: 2.6rem; padding: 0 0.55rem; border-radius: 0.25rem; background: var(--cherry); color: #fff; font: 700 1.45rem/1 var(--font-num); letter-spacing: 0.06em; }
+  .chapter { font-size: 1.5rem; line-height: 1.05; }
+  .updated { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.875rem; }
+  html.tv .logo, html.tv .logo-fallback { height: 3.4rem; }
+  html.tv .logo-fallback { font-size: 1.9rem; padding: 0 0.7rem; }
+  html.tv .chapter { font-size: 2.3rem; }
+  html.tv .updated { font-size: 1.05rem; }
+
+  .clock { display: none; text-align: right; flex: none; }
+  html.tv .clock { display: block; }
+  .clock-time { font: 600 2.7rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
+  .clock-date { color: var(--muted); font-size: 1.05rem; margin-top: 0.2rem; }
+
+  .tabs { display: flex; gap: 0.25rem; flex: none; }
+  html.tv .tabs { display: none; }
+  .tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); cursor: pointer; font: 600 1.05rem/1 var(--font-num); letter-spacing: 0.02em; min-height: 44px; padding: 0.6rem 0.75rem 0.5rem; }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--cherry); }
+  .tab:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+  .notices { display: flex; flex-direction: column; gap: 0.4rem; padding: 0 1rem; max-width: 1280px; margin: 0.75rem auto 0; }
+  .notices:empty { display: none; }
+  html.tv .notices { padding: 0; max-width: none; margin: 0.9rem 0 0; }
+  .notice { background: var(--panel); border-left: 4px solid var(--faint); border-radius: 0.375rem; padding: 0.5rem 0.8rem; font-size: 0.9rem; overflow-wrap: anywhere; }
+  .notice.warn { border-left-color: var(--behind); }
+  .notice.bad { border-left-color: var(--cherry); background: #3a2328; }
+  html.tv .notice { font-size: 1.05rem; padding: 0.45rem 0.9rem; }
+
+  main { padding: 1rem; max-width: 1280px; margin: 0 auto; }
+  html.tv main { flex: 1; min-height: 0; position: relative; max-width: none; margin: 1rem 0 0; padding: 0; }
+  .scene { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+  html.tv .scene { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; gap: 1.1rem; }
+  html.tv .scene.is-active { opacity: 1; }
+  .empty { color: var(--muted); margin: 0; }
+
+  /* ---------- Screen 1: KRAs ---------- */
+  .kra-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.75rem 2rem; flex-wrap: wrap; }
+  .headline { font-size: 2rem; line-height: 1.05; }
+  .headline b { font-weight: 700; }
+  html.tv .headline { font-size: 3.4rem; }
+  .side { display: flex; align-items: flex-end; gap: 1.25rem 1.75rem; flex-wrap: wrap; }
+  .total-label { color: var(--muted); font-size: 0.8rem; }
+  .total-num { font: 600 1.6rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
+  html.tv .total-label { font-size: 1.05rem; }
+  html.tv .total-num { font-size: 2.4rem; }
+  .trend { width: 13rem; max-width: 100%; }
+  .trend svg { display: block; width: 100%; height: 2.6rem; overflow: visible; }
+  .trend-cap { display: flex; justify-content: space-between; gap: 0.5rem; color: var(--muted); font-size: 0.75rem; margin-top: 0.2rem; }
+  html.tv .trend { width: 17rem; }
+  html.tv .trend svg { height: 3rem; }
+  html.tv .trend-cap { font-size: 0.95rem; }
+
+  /* Name above the bar (bottom-aligned, wraps to 2 lines so 5-point KRAs stay
+     readable), points below it. */
+  .strip { display: flex; gap: 0.3rem; }
+  .seg { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+  .seg-name { margin-top: auto; color: var(--muted); font: 500 0.8rem/1.1 var(--font-num); letter-spacing: 0.01em; overflow-wrap: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .seg-bar { display: block; height: 0.9rem; background: var(--track); border-radius: 2px; overflow: hidden; }
+  .seg-fill { display: block; height: 100%; background: var(--sc); }
+  .seg-pts { color: var(--text); font: 600 0.85rem/1 var(--font-num); white-space: nowrap; }
+  html.tv .strip { gap: 0.4rem; }
+  html.tv .seg-bar { height: 1.3rem; }
+  html.tv .seg-name { font-size: 1.05rem; }
+  html.tv .seg-pts { font-size: 1.15rem; }
+  @media (max-width: 640px) { html:not(.tv) .seg-name, html:not(.tv) .seg-pts { display: none; } }
+
+  .kra-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); }
+  html.tv .kra-grid { flex: 1; min-height: 0; gap: 1rem; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); }
+  .card { background: var(--panel); border-radius: var(--radius); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; overflow: hidden; }
+  .card > * { flex-shrink: 0; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+  .card-name { font-size: 1.2rem; line-height: 1.1; overflow-wrap: anywhere; }
+  .pill { flex: none; border: 1px solid var(--sc); border-radius: 999px; color: var(--sc); font: 600 0.8rem/1 var(--font-text); padding: 0.28rem 0.55rem; white-space: nowrap; }
+  .s-met .pill { background: var(--met); color: #1E2A1F; }
+  .card-vals { display: flex; align-items: baseline; gap: 0.15rem 0.45rem; flex-wrap: wrap; }
+  .v-cur { font: 700 2.1rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
+  .v-cur.is-text { font-size: 1.5rem; font-weight: 600; color: var(--muted); }
+  .v-goal { color: var(--muted); font-size: 0.95rem; }
+  .bar { position: relative; height: 0.5rem; background: var(--track); border-radius: 999px; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; background: var(--sc); border-radius: 999px; }
+  .pace { position: absolute; top: -0.3rem; bottom: -0.3rem; width: 2px; margin-left: -1px; background: var(--text); }
+  .card-foot { display: flex; align-items: center; gap: 0.4rem 0.9rem; flex-wrap: wrap; margin-top: auto; color: var(--muted); font-size: 0.9rem; }
+  .card-foot b { color: var(--text); font: 600 1.15rem/1 var(--font-num); }
+  .spark { display: block; width: 5.5rem; height: 1.5rem; margin-left: auto; overflow: visible; }
+  .note { margin: 0; color: var(--muted); font-size: 0.85rem; }
+  html.tv .card { padding: 0.95rem 1.2rem; gap: 0.5rem; }
+  html.tv .card-name { font-size: 1.5rem; }
+  html.tv .pill { font-size: 0.95rem; padding: 0.32rem 0.65rem; }
+  html.tv .v-cur { font-size: 2.8rem; }
+  html.tv .v-cur.is-text { font-size: 2rem; }
+  html.tv .v-goal { font-size: 1.2rem; }
+  html.tv .bar { height: 0.7rem; }
+  html.tv .card-foot { font-size: 1.1rem; }
+  html.tv .card-foot b { font-size: 1.45rem; }
+  html.tv .spark { width: 7.5rem; height: 1.7rem; }
+  html.tv .note { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Fallbacks when a screen would overflow (extra notices, more KRAs, small TVs). */
+  html.tv .dense .card { padding: 0.7rem 1rem; gap: 0.35rem; }
+  html.tv .dense .v-cur { font-size: 2.4rem; }
+  html.tv .dense .spark { height: 1.4rem; }
+  html.tv .dense .headline { font-size: 2.8rem; }
+  html.tv .denser .note { display: none; }
+  html.tv .denser .v-cur { font-size: 2.1rem; }
+  html.tv .denser .card-name { font-size: 1.35rem; }
+  /* Last resort: keep the strip's names (the cards repeat its points). */
+  html.tv .densest .trend, html.tv .densest .spark, html.tv .densest .seg-pts, html.tv .densest .card-foot > span + span { display: none; }
+  html.tv .densest .seg-name { font-size: 0.95rem; }
+  html.tv .densest .seg-bar { height: 1rem; }
+  html.tv .densest .card { padding: 0.55rem 0.9rem; gap: 0.25rem; }
+  html.tv .densest .v-cur { font-size: 1.85rem; }
+  html.tv .densest .headline { font-size: 2.4rem; }
+  html.tv .densest .kra-grid { gap: 0.7rem; }
+
+  /* ---------- Screen 2: Required & bonus ---------- */
+  .lists { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); align-items: start; }
+  html.tv .lists { flex: 1; min-height: 0; grid-template-columns: 1fr 1fr; gap: 1.75rem; align-items: stretch; }
+  .list-block { background: var(--panel); border-radius: var(--radius); padding: 1rem 1.1rem; min-width: 0; overflow: hidden; }
+  .list-head { display: flex; align-items: baseline; gap: 0.25rem 0.9rem; flex-wrap: wrap; padding-bottom: 0.65rem; border-bottom: 1px solid var(--line); }
+  .list-head h2 { font-size: 1.6rem; margin-right: auto; }
+  .list-total { font: 600 1.6rem/1 var(--font-num); }
+  .list-total span, .list-count { color: var(--muted); font-family: var(--font-text); font-size: 0.9rem; font-weight: 400; }
+  .items { list-style: none; margin: 0; padding: 0; }
+  .item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 0.2rem 0.8rem; padding: 0.7rem 0; border-bottom: 1px solid var(--line); }
+  .item:last-child { border-bottom: 0; }
+  .dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; background: var(--sc); }
+  .item-name { font-weight: 500; overflow-wrap: anywhere; line-height: 1.25; }
+  .item-note { display: block; color: var(--muted); font-size: 0.85rem; font-weight: 400; }
+  .item-val { color: var(--muted); text-align: right; white-space: nowrap; }
+  .item-val.is-flag { color: var(--sc); }
+  .item-pts { font: 600 1.15rem/1 var(--font-num); min-width: 3rem; text-align: right; white-space: nowrap; }
+  @media (max-width: 480px) {
+    html:not(.tv) .item { grid-template-columns: auto minmax(0, 1fr) auto; }
+    html:not(.tv) .item-val { grid-column: 2; grid-row: 2; text-align: left; white-space: normal; }
+    html:not(.tv) .item-pts { grid-column: 3; grid-row: 1; }
+  }
+  html.tv .list-block { padding: 1.2rem 1.5rem; }
+  html.tv .list-head h2, html.tv .list-total { font-size: 2.3rem; }
+  html.tv .list-total span, html.tv .list-count { font-size: 1.15rem; }
+  html.tv .item { font-size: 1.35rem; padding: 0.85rem 0; gap: 0.2rem 1.1rem; }
+  html.tv .item-note { font-size: 1rem; }
+  html.tv .dot { width: 1rem; height: 1rem; }
+  html.tv .item-pts { font-size: 1.7rem; min-width: 4rem; }
+  html.tv .dense .item { padding: 0.55rem 0; font-size: 1.2rem; }
+  html.tv .denser .item { padding: 0.35rem 0; font-size: 1.05rem; }
+  html.tv .denser .item-note { display: none; }
+
+  /* ---------- Screen 3: This week ---------- */
+  .week-head { display: flex; align-items: baseline; gap: 0.4rem 1rem; flex-wrap: wrap; }
+  .week-head h2 { font-size: 2rem; }
+  .range { color: var(--muted); }
+  html.tv .week-head h2 { font-size: 3rem; }
+  html.tv .range { font-size: 1.4rem; }
+  .week { display: grid; gap: 0.6rem; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 960px) { html:not(.tv) .week { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+  html.tv .week { flex: 1; min-height: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.8rem; }
+  .day { background: var(--panel); border-radius: var(--radius); padding: 0.75rem 0.8rem; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+  .day.is-today { box-shadow: inset 0 3px 0 var(--cherry); }
+  .day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+  .dow { font: 600 1.2rem/1 var(--font-num); }
+  .date { color: var(--muted); font-size: 0.9rem; }
+  .evs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; min-height: 0; }
+  html.tv .evs { flex: 1; overflow: hidden; }
+  .ev { border-left: 3px solid var(--line); padding: 0.05rem 0 0.05rem 0.55rem; min-width: 0; }
+  .ev-allday { border-left-color: var(--cherry); background: var(--panel-2); border-radius: 0 0.25rem 0.25rem 0; padding: 0.3rem 0.55rem; }
+  .ev-time { display: block; color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+  .ev-title { display: block; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
+  .ev-loc { display: block; color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+  .more, .empty-day { margin: 0; color: var(--faint); font-size: 0.9rem; }
+  html.tv .day { padding: 1rem 0.95rem; gap: 0.8rem; }
+  html.tv .dow { font-size: 1.65rem; }
+  html.tv .date { font-size: 1.1rem; }
+  html.tv .evs { gap: 0.8rem; }
+  html.tv .ev-time, html.tv .ev-loc { font-size: 1.05rem; }
+  html.tv .ev-title { font-size: 1.25rem; }
+  html.tv .more, html.tv .empty-day { font-size: 1.05rem; }
+
+  /* ---------- TV rotation indicator ---------- */
+  .rotation { display: none; }
+  html.tv .rotation { display: flex; gap: 1rem; margin-top: 1rem; }
+  .rot-item { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; color: var(--faint); font: 600 1rem/1 var(--font-num); letter-spacing: 0.02em; }
+  .rot-item.is-active { color: var(--text); }
+  .rot-track { display: block; height: 0.25rem; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .rot-fill { display: block; height: 100%; width: 0; background: var(--cherry); }
+  .rot-item.is-active .rot-fill { animation: rotfill var(--dur, 30s) linear forwards; }
+  .rot-item.is-active.is-paused .rot-fill { animation: none; width: 100%; }
+  @keyframes rotfill { from { width: 0; } to { width: 100%; } }
+
+  @media (max-width: 640px) {
+    html:not(.tv) .top { padding: 0.65rem 1rem 0; }
+    html:not(.tv) .tabs { width: 100%; }
+    html:not(.tv) .tab { flex: 1; padding-left: 0.25rem; padding-right: 0.25rem; }
+    .headline { font-size: 1.75rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.tv .scene { transition: none; }
+    .rot-item.is-active .rot-fill { animation: none; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <header class="top">
+    <div class="brand">
+      <img class="logo" src="tke-logo-white.png" alt="Tau Kappa Epsilon" onerror="var s=document.createElement('span');s.className='logo-fallback';s.setAttribute('role','img');s.setAttribute('aria-label','Tau Kappa Epsilon');s.textContent='ΤΚΕ';this.replaceWith(s)">
+      <div>
+        <h1 class="chapter">Omicron Nu Chapter</h1>
+        <p class="updated" id="updated">Loading…</p>
+      </div>
+    </div>
+    <div class="clock" aria-hidden="true"><div class="clock-time" id="clock-time"></div><div class="clock-date" id="clock-date"></div></div>
+    <nav class="tabs" role="tablist" aria-label="Dashboard screens" id="tabs"></nav>
+  </header>
+  <div class="notices" id="notices" role="status" aria-live="polite"></div>
+  <main id="main">
+    <section class="scene" id="scene-kras" role="tabpanel" aria-labelledby="tab-kras"></section>
+    <section class="scene" id="scene-required" role="tabpanel" aria-labelledby="tab-required"></section>
+    <section class="scene" id="scene-week" role="tabpanel" aria-labelledby="tab-week"></section>
+  </main>
+  <div class="rotation" id="rotation" aria-hidden="true"></div>
+</div>
+<noscript><p style="padding:1rem">This dashboard needs JavaScript.</p></noscript>
+
+<script>
+'use strict';
+
+// Supabase project URL and anon (public) key. Both are safe to publish: RLS
+// only lets this key read. Never put the service-role key here.
+const CONFIG = {
+  supabaseUrl: '',
+  supabaseAnonKey: '',
+};
+
+const params = new URLSearchParams(location.search);
+const TV = params.has('tv');
+const ROTATE_S = params.has('rotate') ? (Number(params.get('rotate')) > 0 ? Math.max(5, Number(params.get('rotate'))) : 0) : 30;
+const REFRESH_MS = 5 * 60e3;      // re-read the database
+const RELOAD_MS = 6 * 3600e3;     // TV: full page reload to pick up deploys
+const STALE_MS = 3 * 3600e3;      // warn when the last good sync is older than this
+const FETCH_TIMEOUT_MS = 15e3;
+const CACHE_KEY = 'on-dashboard-v1';
+const SCENES = [
+  { id: 'kras', label: 'KRAs' },
+  { id: 'required', label: 'Required & bonus' },
+  { id: 'week', label: 'This week' },
+];
+
+const $ = (id) => document.getElementById(id);
+const sceneEls = SCENES.map((s) => $('scene-' + s.id));
+const keyProblem = secretKeyIn(CONFIG.supabaseAnonKey);
+const SAMPLE = params.has('sample') || !CONFIG.supabaseUrl || !CONFIG.supabaseAnonKey || Boolean(keyProblem);
+
+const state = { data: null, error: null, lastGoodAt: null, failures: 0, scene: 0, paused: ROTATE_S === 0, lastAttempt: 0 };
+
+// ---------- Formatting ----------
+
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtNum = (n, max = 2) => Number(n).toLocaleString('en-US', { maximumFractionDigits: max });
+const fmtPts = (n) => (n == null ? '–' : fmtNum(n, 1));
+const timeFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+const fmtTime = (d) => timeFmt.format(d).replace(':00', '');
+const fmtDay = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const fmtWhen = (t) => {
+  const d = new Date(t);
+  return d.toDateString() === new Date().toDateString() ? fmtTime(d) : `${fmtDay(d)}, ${fmtTime(d)}`;
+};
+function fmtRange(s, e) {
+  const a = fmtTime(s), b = fmtTime(e);
+  const am = a.slice(-2), bm = b.slice(-2);
+  return (am === bm ? a.slice(0, -3) : a) + '–' + b;
+}
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const startOfDay = (t) => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const trim = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s || '');
+
+// Result and goal share a number of decimals, so a GPA reads "2.94 of 3.00".
+function fmtValue(k, which) {
+  const n = which === 'current' ? k.current : k.goal;
+  if (n == null) return null;
+  if (k.kind === 'boolean') return n ? 'Done' : 'Not done';
+  const frac = (v) => v != null && Math.abs(v % 1) > 1e-9;
+  const dp = frac(k.current) || frac(k.goal) ? 2 : 0;
+  const s = Number(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
+  return k.kind === 'currency' ? '$' + s : s;
+}
+
+// ---------- Status and pace ----------
+
+/** Share of the KRA window that has passed (0..1), or null without dates. */
+function paceOf(k, now) {
+  if (!k.term_start || !k.due_date || k.kind === 'boolean' || !(k.goal > 0)) return null;
+  const s = new Date(k.term_start + 'T00:00:00').getTime();
+  const e = new Date(k.due_date + 'T23:59:59').getTime();
+  if (!(e > s)) return null;
+  return Math.min(1, Math.max(0, (now - s) / (e - s)));
+}
+
+function statusOf(k, now) {
+  if (k.met) return { key: 'met', label: 'Met' };
+  if (k.kind === 'boolean') return k.current == null ? { key: 'none', label: 'Not reported' } : { key: 'behind', label: 'Not done' };
+  if (k.current == null) return { key: 'none', label: 'Not reported' };
+  if (k.goal == null) return { key: 'none', label: 'No goal set' };
+  const pace = paceOf(k, now);
+  if (pace != null) return k.current / k.goal + 0.02 >= pace ? { key: 'ontrack', label: 'On pace' } : { key: 'behind', label: 'Behind pace' };
+  return { key: 'behind', label: 'Not met' };
+}
+
+function totals(kras) {
+  const t = {};
+  for (const s of ['kra', 'required', 'bonus']) {
+    const rows = kras.filter((k) => k.section === s);
+    t[s] = {
+      rows,
+      points: rows.reduce((a, k) => a + (Number(k.points) || 0), 0),
+      out_of: rows.reduce((a, k) => a + (Number(k.out_of) || 0), 0),
+      met: rows.filter((k) => k.met).length,
+    };
+  }
+  return t;
+}
+
+// ---------- Charts ----------
+
+function linePath(points, w, h, yMax) {
+  const xs = points.map((p) => p.x), x0 = Math.min(...xs), x1 = Math.max(...xs);
+  const sx = (x) => (x1 === x0 ? w : ((x - x0) / (x1 - x0)) * w);
+  const sy = (y) => h - (Math.min(y, yMax) / yMax) * h;
+  return { d: points.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join(''), sx, sy };
+}
+
+function sparkline(series, goal) {
+  const pts = series.filter((p) => p.y != null);
+  if (pts.length < 2) return '';
+  const yMax = Math.max(goal || 0, ...pts.map((p) => p.y)) || 1;
+  const { d, sx, sy } = linePath(pts, 100, 24, yMax);
+  const last = pts[pts.length - 1];
+  return `<svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+    ${goal ? `<line x1="0" x2="100" y1="${sy(goal).toFixed(1)}" y2="${sy(goal).toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>` : ''}
+    <path d="${d}" fill="none" stroke="var(--muted)" stroke-width="1.75" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    <circle cx="${sx(last.x).toFixed(1)}" cy="${sy(last.y).toFixed(1)}" r="2.2" fill="var(--text)"/>
+  </svg>`;
+}
+
+function pointsTrend(snapshots, outOf) {
+  const byDay = new Map();
+  for (const s of snapshots) {
+    if (!String(s.kra_id).startsWith('kra-')) continue;
+    byDay.set(s.day, (byDay.get(s.day) || 0) + (Number(s.points) || 0));
+  }
+  const days = [...byDay.keys()].sort();
+  if (days.length < 2) return '';
+  const pts = days.map((day) => ({ x: new Date(day + 'T12:00:00').getTime(), y: byDay.get(day) }));
+  const yMax = Math.max(outOf || 0, ...pts.map((p) => p.y)) || 1;
+  const { d } = linePath(pts, 200, 40, yMax);
+  const since = esc(fmtDay(new Date(days[0] + 'T12:00:00')));
+  const firstPts = fmtPts(pts[0].y), lastPts = fmtPts(pts[pts.length - 1].y);
+  return `<div class="trend">
+    <svg viewBox="0 0 200 40" preserveAspectRatio="none" role="img" aria-label="KRA points since ${since}: ${firstPts} then, ${lastPts} now">
+      <path d="${d}L200,40L0,40Z" fill="var(--cherry)" fill-opacity="0.22"/>
+      <path d="${d}" fill="none" stroke="var(--cherry)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+    </svg>
+    <div class="trend-cap">Points since ${since}: ${firstPts} → ${lastPts}</div>
+  </div>`;
+}
+
+// ---------- Screen 1: KRAs ----------
+
+function renderKras(d, now) {
+  const t = totals(d.kras);
+  const kras = t.kra.rows;
+  if (!kras.length) return `<p class="empty">No KRA data yet. It appears after the first sync.</p>`;
+  const series = new Map();
+  for (const s of d.snapshots || []) {
+    if (!series.has(s.kra_id)) series.set(s.kra_id, []);
+    series.get(s.kra_id).push({ x: new Date(s.day + 'T12:00:00').getTime(), y: s.current == null ? null : Number(s.current) });
+  }
+
+  const strip = kras.map((k) => {
+    const st = statusOf(k, now);
+    const pct = k.out_of > 0 ? Math.min(100, (Number(k.points) || 0) / k.out_of * 100) : 0;
+    return `<div class="seg s-${st.key}" style="flex:${Math.max(Number(k.out_of) || 0, 0.5)} 1 0">
+      <span class="seg-name">${esc(k.name)}</span>
+      <span class="seg-bar"><span class="seg-fill" style="width:${pct}%"></span></span>
+      <span class="seg-pts">${fmtPts(k.points)}/${fmtPts(k.out_of)}</span>
+    </div>`;
+  }).join('');
+  const stripLabel = kras.map((k) => `${k.name} ${fmtPts(k.points)} of ${fmtPts(k.out_of)}`).join(', ');
+
+  const cards = kras.map((k) => {
+    const st = statusOf(k, now);
+    const cur = fmtValue(k, 'current');
+    const goal = k.kind === 'boolean' ? null : fmtValue(k, 'goal');
+    const pace = paceOf(k, now);
+    const fill = k.kind === 'boolean' ? (k.current ? 100 : 0) : (k.goal > 0 && k.current != null ? Math.min(100, Math.max(0, k.current / k.goal * 100)) : (k.met ? 100 : 0));
+    // A zero goal (Finances: owe nationals nothing) isn't a target to count up to.
+    const goalText = k.kind === 'boolean' ? '' : goal == null ? 'No goal set' : cur == null || k.goal === 0 ? `Goal ${esc(goal)}` : `of ${esc(goal)} goal`;
+    const due = k.due_date ? `<span>Due ${esc(fmtDay(new Date(k.due_date + 'T12:00:00')))}</span>` : '';
+    return `<article class="card s-${st.key}">
+      <div class="card-top"><h3 class="card-name">${esc(k.name)}</h3><span class="pill">${st.label}</span></div>
+      <div class="card-vals">
+        ${cur != null ? `<span class="v-cur">${esc(cur)}</span>` : `<span class="v-cur is-text">Not reported</span>`}
+        ${goalText ? `<span class="v-goal">${goalText}</span>` : ''}
+      </div>
+      <div class="bar" role="img" aria-label="${Math.round(fill)}% of goal${pace != null ? `; on pace would be ${Math.round(pace * 100)}%` : ''}">
+        <span class="bar-fill" style="width:${fill}%"></span>
+        ${pace != null ? `<span class="pace" style="left:${(pace * 100).toFixed(1)}%" title="Where you'd be on pace today"></span>` : ''}
+      </div>
+      <div class="card-foot"><span><b>${fmtPts(k.points)}</b>/${fmtPts(k.out_of)} pts</span>${due}${sparkline(series.get(k.id) || [], k.goal)}</div>
+      ${k.note ? `<p class="note">${esc(k.note)}</p>` : ''}
+    </article>`;
+  }).join('');
+
+  const cols = kras.length <= 9 ? 3 : kras.length <= 12 ? 4 : 5;
+  return `<div class="kra-head">
+      <h2 class="headline"><b>${fmtPts(t.kra.points)}/${fmtPts(t.kra.out_of)}</b> KRA points. <b>${t.kra.met} of ${kras.length}</b> met.</h2>
+      <div class="side">
+        <div><div class="total-label">Required</div><div class="total-num">${fmtPts(t.required.points)}/${fmtPts(t.required.out_of)}</div></div>
+        <div><div class="total-label">Bonus</div><div class="total-num">${fmtPts(t.bonus.points)}/${fmtPts(t.bonus.out_of)}</div></div>
+        ${pointsTrend(d.snapshots || [], t.kra.out_of)}
+      </div>
+    </div>
+    <div class="strip" role="img" aria-label="Points by KRA: ${esc(stripLabel)}">${strip}</div>
+    <div class="kra-grid" style="--cols:${cols}">${cards}</div>`;
+}
+
+// ---------- Screen 2: Required & bonus ----------
+
+function itemValue(k) {
+  if (k.kind === 'boolean') return k.current == null ? 'Not reported' : k.current ? 'Done' : 'Not done';
+  const cur = fmtValue(k, 'current');
+  const goal = fmtValue(k, 'goal');
+  if (cur == null) return 'Not reported' + (goal == null ? ' · No goal set' : '');
+  return goal == null ? `${cur} · No goal set` : k.goal === 0 ? `${cur} · goal ${goal}` : `${cur} of ${goal}`;
+}
+
+function renderList(title, sec, now) {
+  const rows = sec.rows;
+  const items = rows.map((k) => {
+    const st = statusOf(k, now);
+    return `<li class="item s-${st.key}">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="item-name">${esc(k.name)}${k.note ? `<span class="item-note">${esc(k.note)}</span>` : ''}</span>
+      <span class="item-val${k.kind === 'boolean' ? ' is-flag' : ''}">${esc(itemValue(k))}<span class="sr-only">, ${st.label}</span></span>
+      <span class="item-pts">${fmtPts(k.points)}/${fmtPts(k.out_of)}</span>
+    </li>`;
+  }).join('');
+  return `<section class="list-block" aria-label="${esc(title)}">
+    <header class="list-head"><h2>${esc(title)}</h2>
+      <span class="list-count">${sec.met} of ${rows.length} met</span>
+      <span class="list-total">${fmtPts(sec.points)}/${fmtPts(sec.out_of)} <span>pts</span></span>
+    </header>
+    ${rows.length ? `<ul class="items">${items}</ul>` : `<p class="empty" style="padding-top:.75rem">Nothing listed.</p>`}
+  </section>`;
+}
+
+function renderRequired(d, now) {
+  const t = totals(d.kras);
+  if (!t.required.rows.length && !t.bonus.rows.length) return `<p class="empty">No required or bonus items yet. They appear after the first sync.</p>`;
+  return `<div class="lists">${renderList('Required', t.required, now)}${renderList('Bonus', t.bonus, now)}</div>`;
+}
+
+// ---------- Screen 3: This week ----------
+
+function eventsOn(events, dayStart) {
+  const dayEnd = addDays(dayStart, 1).getTime(), start = dayStart.getTime(), key = ymd(dayStart);
+  const out = [];
+  for (const e of events) {
+    if (e.all_day) {
+      const s = e.starts_at.slice(0, 10), en = e.ends_at ? e.ends_at.slice(0, 10) : '';
+      if (s <= key && key < (en > s ? en : ymd(addDays(new Date(s + 'T12:00:00'), 1)))) out.push({ e, rank: 0, sort: 0, label: '' });
+      continue;
+    }
+    const s = Date.parse(e.starts_at), en = e.ends_at ? Date.parse(e.ends_at) : s;
+    if (!(s < dayEnd && (en > start || (en === s && s >= start)))) continue;
+    let label, rank = 2;
+    if (s >= start && en <= dayEnd) label = en > s ? fmtRange(new Date(s), new Date(en)) : fmtTime(new Date(s));
+    else if (s < start && en > dayEnd) { label = 'All day'; rank = 1; }
+    else if (s < start) { label = 'Until ' + fmtTime(new Date(en)); rank = 1; }
+    else label = 'From ' + fmtTime(new Date(s));
+    out.push({ e, rank, sort: s, label });
+  }
+  return out.sort((a, b) => a.rank - b.rank || a.sort - b.sort || a.e.title.localeCompare(b.e.title));
+}
+
+function renderWeek(d, now) {
+  const today = startOfDay(now);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+  const cols = days.map((day, i) => {
+    const evs = eventsOn(d.events || [], day);
+    const name = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : day.toLocaleDateString('en-US', { weekday: 'long' });
+    const items = evs.map(({ e, label }) => e.all_day
+      ? `<li class="ev ev-allday"><span class="ev-title">${esc(e.title)}</span></li>`
+      : `<li class="ev"><span class="ev-time">${esc(label)}</span><span class="ev-title">${esc(e.title)}</span>${e.location ? `<span class="ev-loc">${esc(e.location)}</span>` : ''}</li>`).join('');
+    return `<section class="day${i === 0 ? ' is-today' : ''}" aria-label="${esc(name)}, ${esc(fmtDay(day))}">
+      <header class="day-head"><span class="dow">${esc(name)}</span><span class="date">${esc(fmtDay(day))}</span></header>
+      ${evs.length ? `<ul class="evs">${items}</ul><p class="more" hidden></p>` : `<p class="empty-day">Nothing scheduled</p>`}
+    </section>`;
+  }).join('');
+  return `<div class="week-head"><h2>This week</h2><span class="range">${esc(fmtDay(days[0]))} – ${esc(fmtDay(days[6]))}</span></div>
+    <div class="week">${cols}</div>`;
+}
+
+// ---------- Header, notices, render ----------
+
+function updatedText(d, now) {
+  if (!d) return state.error ? 'Waiting for data' : 'Loading…';
+  if (d.source === 'sample') return 'Sample data from Oct 30, 2026';
+  if (!d.lastOk) return 'Not synced yet';
+  const t = Date.parse(d.lastOk.ran_at);
+  const mins = Math.max(0, Math.round((now - t) / 60e3));
+  const ago = mins < 1 ? 'just now' : mins < 90 ? `${mins} min ago` : `${Math.round(mins / 60)} h ago`;
+  return TV ? `Updated ${fmtWhen(t)}` : `Updated ${fmtWhen(t)} · ${ago}`;
+}
+
+function noticeList(d, now) {
+  const out = [];
+  if (keyProblem) out.push(['bad', 'This page has a secret Supabase key in CONFIG. Remove it, rotate the key in Supabase, and use the anon key instead.']);
+  else if (d && d.source === 'sample') out.push(['info', 'Sample data. Add the Supabase URL and anon key to CONFIG in Dashboard/index.html to show live numbers.']);
+  if (state.error) out.push(['warn', d ? `Can't reach the database. Showing data from ${fmtWhen(state.lastGoodAt)}. Retrying.` : `Can't reach the database. Retrying.`]);
+  if (d && d.source === 'live') {
+    if (!d.lastOk) out.push(['warn', 'No successful sync yet.']);
+    else if (now - Date.parse(d.lastOk.ran_at) > STALE_MS) out.push(['warn', `This data is ${Math.floor((now - Date.parse(d.lastOk.ran_at)) / 3600e3)} hours old. The hourly sync may be stuck.`]);
+    if (d.lastRun && !d.lastRun.ok) out.push(['warn', `The last sync failed (${fmtWhen(d.lastRun.ran_at)}): ${trim(d.lastRun.message, TV ? 110 : 220)}`]);
+  }
+  return out;
+}
+
+function renderAll() {
+  const now = Date.now();
+  const d = state.data;
+  $('updated').textContent = updatedText(d, now);
+  $('notices').innerHTML = noticeList(d, now).map(([level, text]) => `<div class="notice ${level}">${esc(text)}</div>`).join('');
+  const blank = { kras: [], events: [], snapshots: [] };
+  const renderers = [renderKras, renderRequired, renderWeek];
+  sceneEls.forEach((el, i) => {
+    try { el.innerHTML = renderers[i](d || blank, now); } catch (err) {
+      console.error(err);
+      el.innerHTML = `<p class="empty">Couldn't draw this screen. The rest of the dashboard still works.</p>`;
+    }
+  });
+  fitTv();
+}
+
+// TV only: make each screen fit 1080p without scrolling.
+function overflows(el) {
+  if (el.scrollHeight > el.clientHeight + 1) return true;
+  for (const c of el.querySelectorAll('.card, .list-block')) if (c.scrollHeight > c.clientHeight + 1) return true;
+  return false;
+}
+function fitTv() {
+  if (!TV) return;
+  const levels = ['dense', 'denser', 'densest'];
+  for (const el of sceneEls) {
+    el.classList.remove(...levels);
+    for (const level of levels) {
+      if (!overflows(el)) break;
+      el.classList.add(level);
+    }
+  }
+  for (const day of document.querySelectorAll('.day')) {
+    const list = day.querySelector('.evs'), more = day.querySelector('.more');
+    if (!list || !more) continue;
+    const items = [...list.children];
+    let hiddenCount = 0;
+    while (list.scrollHeight > list.clientHeight + 1 && hiddenCount < items.length - 1) {
+      more.hidden = false;
+      items[items.length - 1 - hiddenCount].hidden = true;
+      hiddenCount++;
+      more.textContent = `+${hiddenCount} more`;
+    }
+  }
+}
+
+// ---------- Data ----------
+
+function secretKeyIn(key) {
+  if (!key) return null;
+  if (/^sb_secret_/.test(key)) return 'secret';
+  if (key.split('.').length === 3) {
+    try {
+      const payload = JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (payload.role === 'service_role') return 'service_role';
+    } catch (e) { /* not a JWT we can read; let the API decide */ }
+  }
+  return null;
+}
+
+function fetchWithTimeout(url, opts) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  return fetch(url, Object.assign({ cache: 'no-store', signal: ctrl.signal }, opts)).finally(() => clearTimeout(timer));
+}
+
+async function api(query) {
+  const key = CONFIG.supabaseAnonKey;
+  const headers = { apikey: key, Accept: 'application/json' };
+  if (!/^sb_/.test(key)) headers.Authorization = 'Bearer ' + key; // legacy JWT anon keys
+  const res = await fetchWithTimeout(`${CONFIG.supabaseUrl.replace(/\/+$/, '')}/rest/v1/${query}`, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function loadLive(now) {
+  const today = startOfDay(now);
+  const from = encodeURIComponent(addDays(today, -1).toISOString());
+  const to = encodeURIComponent(addDays(today, 8).toISOString());
+  const [kras, events, lastRun, lastOk] = await Promise.all([
+    api('kras?select=*&order=section.asc,sort_order.asc'),
+    api(`events?select=*&starts_at=lt.${to}&ends_at=gt.${from}&order=starts_at.asc`),
+    api('sync_runs?select=ran_at,ok,message&order=ran_at.desc&limit=1'),
+    api('sync_runs?select=ran_at,ok,message&ok=eq.true&order=ran_at.desc&limit=1'),
+  ]);
+  let snapshots = [];
+  try {
+    for (let offset = 0; offset < 20000; offset += 1000) {
+      const page = await api(`kra_snapshots?select=day,kra_id,current,points&kra_id=like.kra-*&order=day.asc,kra_id.asc&limit=1000&offset=${offset}`);
+      snapshots = snapshots.concat(page);
+      if (page.length < 1000) break;
+    }
+  } catch (e) { snapshots = []; } // history is a nice-to-have; never block the page on it
+  return { source: 'live', kras, events, lastRun: lastRun[0] || null, lastOk: lastOk[0] || null, snapshots };
+}
+
+function cacheSave(d) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), data: d })); } catch (e) { /* storage may be off */ }
+}
+function cacheLoad() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch (e) { return null; }
+}
+
+let refreshTimer = 0;
+async function refresh() {
+  clearTimeout(refreshTimer);
+  const now = Date.now();
+  state.lastAttempt = now;
+  try {
+    const d = SAMPLE ? sampleData(now) : await loadLive(now);
+    state.data = d;
+    state.error = null;
+    state.lastGoodAt = now;
+    state.failures = 0;
+    if (!SAMPLE) cacheSave(d);
+  } catch (err) {
+    state.error = err;
+    state.failures++;
+    if (!state.data) {
+      const cached = cacheLoad();
+      if (cached && cached.data) { state.data = cached.data; state.lastGoodAt = cached.at; }
+    }
+  }
+  renderAll();
+  // Back off 30 s, 1, 2, 4 min… while the network is down, then every 5 min.
+  const delay = state.error ? Math.min(REFRESH_MS, 30e3 * 2 ** (state.failures - 1)) : REFRESH_MS;
+  refreshTimer = setTimeout(refresh, delay);
+}
+
+// ---------- Screens: tabs (members) and rotation (TV) ----------
+
+let rotateTimer = 0;
+function showScene(i, opts) {
+  state.scene = (i + SCENES.length) % SCENES.length;
+  SCENES.forEach((s, j) => {
+    const on = j === state.scene;
+    sceneEls[j].classList.toggle('is-active', on);
+    if (TV) sceneEls[j].setAttribute('aria-hidden', String(!on));
+    else {
+      sceneEls[j].hidden = !on;
+      const tab = $('tab-' + s.id);
+      tab.setAttribute('aria-selected', String(on));
+      tab.tabIndex = on ? 0 : -1;
+    }
+  });
+  if (!TV) {
+    if (opts && opts.fromUser) history.replaceState(null, '', '#' + SCENES[state.scene].id);
+    return;
+  }
+  [...$('rotation').children].forEach((el, j) => {
+    el.classList.toggle('is-active', j === state.scene);
+    el.classList.toggle('is-paused', state.paused);
+    if (j === state.scene) { const f = el.querySelector('.rot-fill'); f.style.animation = 'none'; void f.offsetWidth; f.style.animation = ''; }
+  });
+  clearTimeout(rotateTimer);
+  if (!state.paused) rotateTimer = setTimeout(() => showScene(state.scene + 1), ROTATE_S * 1000);
+}
+
+function sceneFrom(value) {
+  const i = SCENES.findIndex((s) => s.id === String(value || '').replace('#', ''));
+  return i < 0 ? 0 : i;
+}
+
+function setUpMembers() {
+  const tabs = $('tabs');
+  tabs.innerHTML = SCENES.map((s) => `<button class="tab" role="tab" id="tab-${s.id}" aria-controls="scene-${s.id}" type="button">${esc(s.label)}</button>`).join('');
+  SCENES.forEach((s, i) => $('tab-' + s.id).addEventListener('click', () => showScene(i, { fromUser: true })));
+  tabs.addEventListener('keydown', (e) => {
+    const moves = { ArrowRight: 1, ArrowLeft: -1, Home: -state.scene, End: SCENES.length - 1 - state.scene };
+    if (!(e.key in moves)) return;
+    e.preventDefault();
+    showScene(state.scene + moves[e.key], { fromUser: true });
+    $('tab-' + SCENES[state.scene].id).focus();
+  });
+  addEventListener('hashchange', () => showScene(sceneFrom(location.hash)));
+  showScene(params.has('scene') ? sceneFrom(params.get('scene')) : sceneFrom(location.hash));
+}
+
+function setUpTv() {
+  $('rotation').innerHTML = SCENES.map((s) => `<div class="rot-item" style="--dur:${ROTATE_S || 30}s"><span>${esc(s.label)}</span><span class="rot-track"><span class="rot-fill"></span></span></div>`).join('');
+  addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') showScene(state.scene + 1);
+    else if (e.key === 'ArrowLeft') showScene(state.scene - 1);
+    else if (e.key === ' ' && ROTATE_S) { state.paused = !state.paused; showScene(state.scene); }
+  });
+
+  // Clock.
+  const tick = () => {
+    const d = new Date();
+    $('clock-time').textContent = timeFmt.format(d);
+    $('clock-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    $('updated').textContent = updatedText(state.data, d.getTime());
+  };
+  tick();
+  setInterval(tick, 15e3);
+
+  // Burn-in: nudge the whole layout a few pixels to a new spot every hour.
+  const SHIFTS = [[0, 0], [5, 3], [-4, 5], [3, -4], [-5, -2], [2, 5], [-3, -5], [4, 1]];
+  const shift = () => {
+    const [x, y] = SHIFTS[Math.floor(Date.now() / 3600e3) % SHIFTS.length];
+    $('stage').style.transform = `translate(${x * 0.06}rem, ${y * 0.06}rem)`;
+  };
+  shift();
+  setInterval(shift, 60e3);
+
+  // Full reload every 6 h to pick up new versions, but only when the site
+  // answers, so a Wi-Fi drop never leaves the TV on a browser error page.
+  const tryReload = async () => {
+    if (navigator.onLine === false) return setTimeout(tryReload, 5 * 60e3);
+    try {
+      const res = await fetchWithTimeout(location.href, {});
+      if (res.ok) return location.reload();
+    } catch (e) { /* offline or timed out */ }
+    setTimeout(tryReload, 5 * 60e3);
+  };
+  setTimeout(tryReload, RELOAD_MS);
+
+  // Keep the screen awake where the browser allows it.
+  const wake = () => { try { if (navigator.wakeLock && !document.hidden) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) { /* unsupported */ } };
+  wake();
+  document.addEventListener('visibilitychange', wake);
+
+  let resizeTimer = 0;
+  addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitTv, 200); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTv);
+
+  showScene(sceneFrom(params.get('scene')));
+}
+
+// ---------- Sample data (shown until Supabase is configured) ----------
+// The rows on nationals' KRA page on Oct 30, 2026 (28/90, 2 of 9 met;
+// required 3/11; bonus 0/10).
+
+const SAMPLE_ROWS = {
+  // [name, result, goal, points, out of, met, cumulative]
+  kra: [
+    ['Initiates', '0', '15', 0, 25, false, true],
+    ['Finances', '$0.00', '$0.00', 15, 15, true],
+    ['RLC Attendance', '0', '12', 0, 15, false],
+    ['Risk Mgmt Education', '29', '29', 10, 10, true],
+    ['EDU.TKE.org Usage', '27', '150', 0.9, 5, false],
+    ['Philanthropy', '$0.00', '$8,000.00', 0, 5, false, true],
+    ['Phired Up', '0', '15', 0, 5, false],
+    ['Service', '520.00', '1300', 2, 5, false, true],
+    ['St. Jude Dollars', '$165.00', '$8,000.00', 0.1, 5, false, true],
+  ],
+  required: [
+    ['Academics', 'N/A', '3', 0, 3, false],
+    ['Alumni Engagement', '4', '1', 3, 3, true],
+    ['Annual Report', 'False', 'True', 0, 2, false],
+    ['Ritual Equip. Check', 'False', 'True', 0, 2, false],
+    ['Chapter Advisor', 'N/A', 'True', 0, 1, false],
+  ],
+  bonus: [
+    ['Forum Attendance', '0', '15', 0, 3, false],
+    ['Foundation Donors', '6', '15', 0, 3, false],
+    ['Money Vehicle', '0', '', 0, 3, false],
+    ['Membership Growth', 'N/A', '1', 0, 1, false],
+  ],
+};
+
+function sampleValue(t) {
+  t = (t || '').trim();
+  if (!t || /^n\/?a$/i.test(t)) return null;
+  if (/^true$/i.test(t)) return 1;
+  if (/^false$/i.test(t)) return 0;
+  const n = Number(t.replace(/[$,%\s]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function sampleData(now) {
+  const kras = [];
+  for (const section of Object.keys(SAMPLE_ROWS)) {
+    SAMPLE_ROWS[section].forEach(([name, result, goal, points, outOf, met, cumulative], i) => {
+      const kind = /^(true|false)$/i.test(result) || /^(true|false)$/i.test(goal) ? 'boolean' : (result + goal).includes('$') ? 'currency' : 'number';
+      kras.push({
+        id: `${section}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
+        section, name, kind, result_text: result, goal_text: goal,
+        current: sampleValue(result), goal: sampleValue(goal), points, out_of: outOf, met, sort_order: i,
+        term_start: cumulative ? '2026-08-01' : null, due_date: cumulative ? '2027-05-01' : null, note: null,
+      });
+    });
+  }
+
+  // Weekly history since the start of the semester, ending at today's values.
+  const snapshots = [];
+  const start = new Date(2026, 7, 24), end = startOfDay(now);
+  const span = Math.max(1, Math.round((end - start) / 864e5));
+  for (let day = 0; day <= span; day++) {
+    const f = day === span ? 1 : Math.pow(Math.floor(day / 7) * 7 / span, 1.3);
+    const date = ymd(addDays(start, day));
+    for (const k of kras.filter((r) => r.section === 'kra')) {
+      const cur = k.current == null ? null : k.kind === 'boolean' ? (f > 0.6 ? k.current : 0) : Math.round(k.current * Math.min(1, f) * 100) / 100;
+      snapshots.push({ day: date, kra_id: k.id, current: cur, points: Math.round(k.points * Math.min(1, f)) });
+    }
+  }
+
+  // A plausible week, placed relative to today so it always has something on it.
+  const today = startOfDay(now);
+  const inDays = (dow) => (dow - today.getDay() + 7) % 7;
+  const at = (offset, h, m) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset, h, m || 0).toISOString();
+  const timed = (title, offset, h1, m1, h2, m2, location) => ({ id: title + offset, title, starts_at: at(offset, h1, m1), ends_at: at(offset, h2, m2), all_day: false, location: location || null });
+  const allDay = (title, offset, days) => ({ id: title + offset, title, starts_at: ymd(addDays(today, offset)) + 'T00:00:00.000Z', ends_at: ymd(addDays(today, offset + (days || 1))) + 'T00:00:00.000Z', all_day: true, location: null });
+  const events = [
+    timed('Chapter meeting', inDays(0), 19, 0, 20, 30, 'Chapter room'),
+    timed('Executive board', inDays(3), 20, 0, 21, 0, 'Chapter room'),
+    timed('Brotherhood night', inDays(4), 20, 0, 22, 0),
+    timed('Beach cleanup', inDays(6), 9, 0, 12, 0, 'Paradise Beach Park'),
+    timed('St. Jude stream', inDays(5), 18, 0, 23, 0, 'twitch.tv/taukappaepsilon_on'),
+    timed('Study hours', inDays(2), 18, 0, 21, 0, 'Evans Library'),
+    timed('Recruitment table', inDays(2), 11, 0, 14, 0, 'Student Union'),
+    allDay('Homecoming weekend', inDays(5), 3),
+    allDay('Election day', inDays(2)),
+  ];
+
+  const synced = new Date(now - 23 * 60e3).toISOString();
+  return { source: 'sample', kras, events, snapshots, lastRun: { ran_at: synced, ok: true, message: '' }, lastOk: { ran_at: synced, ok: true, message: '' } };
+}
+
+// ---------- Start ----------
+
+if (TV) setUpTv(); else setUpMembers();
+refresh();
+addEventListener('online', () => refresh());
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && Date.now() - state.lastAttempt > 60e3) refresh();
+});
+</script>
+</body>
+</html>
