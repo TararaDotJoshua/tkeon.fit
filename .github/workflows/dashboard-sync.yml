@@ -1,0 +1,97 @@
+name: Dashboard sync
+
+# Hourly: Google Calendar + TKE KRA page -> Supabase, for tkeon.fit/Dashboard.
+# Minute 7 avoids the top-of-hour rush on GitHub's scheduler.
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write # only for the keep-alive step below
+
+concurrency:
+  group: dashboard-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: sync
+    steps:
+      - uses: actions/checkout@v7
+
+      # Until the Supabase secrets exist there's nowhere to write, so skip the
+      # run instead of failing (and emailing) every hour.
+      - name: Check setup
+        id: setup
+        working-directory: .
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::notice::Dashboard sync is not set up yet. Add the SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY secrets. Skipping this run."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - uses: actions/setup-node@v7
+        if: steps.setup.outputs.ready == 'true'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sync/package-lock.json
+
+      - run: npm ci
+        if: steps.setup.outputs.ready == 'true'
+
+      - name: Cache Playwright browser
+        id: pw-cache
+        if: steps.setup.outputs.ready == 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('sync/package-lock.json') }}
+
+      - name: Install Chromium
+        if: steps.setup.outputs.ready == 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+
+      - name: Sync
+        if: steps.setup.outputs.ready == 'true'
+        run: node sync.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GCAL_ICS_URL: ${{ secrets.GCAL_ICS_URL }}
+          TKE_USERNAME: ${{ secrets.TKE_USERNAME }}
+          TKE_PASSWORD: ${{ secrets.TKE_PASSWORD }}
+
+      # This repo is public, so anyone signed in to GitHub can download this.
+      # It's a screenshot of whatever page the login stopped on; kept 3 days.
+      - name: Upload debug screenshot
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: tke-debug-screenshot
+          path: sync/debug/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # GitHub turns off scheduled workflows in public repos after 60 days with
+      # no commits. Re-enabling it once a day resets that clock.
+      - name: Keep the schedule alive
+        if: always() && github.event_name == 'schedule'
+        working-directory: .
+        run: |
+          if [ "$(date -u +%H)" = "12" ]; then
+            gh api -X PUT "repos/${{ github.repository }}/actions/workflows/dashboard-sync.yml/enable" || true
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}

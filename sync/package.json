@@ -1,0 +1,20 @@
+{
+  "name": "tkeon-dashboard-sync",
+  "private": true,
+  "type": "module",
+  "description": "Hourly sync for tkeon.fit/Dashboard: Google Calendar + TKE KRA page -> Supabase",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "sync": "node sync.mjs",
+    "test": "node --test \"test/*.test.mjs\"",
+    "shots": "node screenshots.mjs",
+    "check-rls": "node check-rls.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.118.0",
+    "node-ical": "0.27.3",
+    "playwright": "1.64.1"
+  }
+}
