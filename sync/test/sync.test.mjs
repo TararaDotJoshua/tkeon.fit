@@ -121,6 +121,29 @@ describe('TKE scrape (mock site)', { timeout: 120_000 }, () => {
     checkParsed(await scrapeFile(file));
   });
 
+  test('the real my.tke.org KRA markup parses exactly (and the officers table is ignored)', async () => {
+    const raw = await scrapeFile(new URL('./fixtures/my-tke-kra.html', import.meta.url).pathname);
+    const { rows, totals, warnings } = parseKraTables(raw);
+    assert.deepEqual(warnings, []);
+    assert.deepEqual(
+      Object.fromEntries(Object.entries(totals).map(([s, t]) => [s, `${t.points}/${t.out_of} ${t.met}/${t.count}`])),
+      { kra: '16.83/90 1/9', required: '4/11 2/5', bonus: '0/10 0/4' },
+    );
+    // The page's own "KRA Totals - 20.83%" is the sum of every section's points.
+    assert.equal(Math.round((totals.kra.points + totals.required.points + totals.bonus.points) * 100) / 100, 20.83);
+    const byId = Object.fromEntries(rows.map((r) => [r.id, r]));
+    assert.equal(rows.length, 18);
+    assert.ok(!rows.some((r) => /example|prytanis|@/i.test(r.name + r.result_text)), 'officer rows must not be read');
+    assert.equal(byId['kra-initiates'].points, 3.33);
+    assert.equal(byId['kra-finances'].current, 375);
+    assert.equal(byId['kra-finances'].goal, 0);
+    assert.equal(byId['kra-finances'].met, false); // "Have Not Met This KRA" contains "Met"
+    assert.equal(byId['kra-risk-mgmt-education'].met, true);
+    assert.equal(byId['required-chapter-advisor'].kind, 'boolean');
+    assert.equal(byId['required-chapter-advisor'].met, true);
+    assert.equal(byId['bonus-money-vehicle'].goal, null);
+  });
+
   for (const mode of ['normal', 'bounce']) {
     test(`logs in and reads JS-drawn tables (${mode})`, async () => {
       const mock = await startMockTke({ mode });

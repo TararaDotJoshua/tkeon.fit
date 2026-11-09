@@ -43,13 +43,16 @@ const page = (title, body) => `<!doctype html><html><head><meta charset="utf-8">
 <style>body{font:14px Arial;margin:24px}.table{border-collapse:collapse;margin-bottom:24px}td,th{border:1px solid #ccc;padding:4px 8px}</style>
 </head><body><nav>TKE Module · <a href="/Home">Home</a> · <a href="/Chapter/KRA">KRA</a></nav>${body}</body></html>`;
 
+// Same fields as my.tke.org/Login.aspx, including its hidden second password
+// field (a change-password box) that the login must not pick.
 function loginForm(error = '', captcha = false) {
   return page('Log in', `<h1>Member log in</h1>${error ? `<p class="error">${error}</p>` : ''}
-<form method="post" action="/Account/Login${''}">
-<label>Username <input id="UserName" name="UserName" type="text"></label>
-<label>Password <input id="Password" name="Password" type="password"></label>
+<form method="post" action="/Account/Login${''}" id="form1">
+<div style="display:none"><input type="password" name="newPassword" id="newPassword" value=""><input type="submit" name="cmdChange" value="Change"></div>
+<input name="UserName" type="text" id="UserName" class="form-control" placeholder="User Name">
+<input name="Password" id="Password" class="form-control" type="password" placeholder="Password">
 ${captcha ? '<iframe src="/recaptcha/api2/anchor?k=test" width="304" height="78"></iframe>' : ''}
-<button type="submit">Log In</button></form>`);
+<input type="submit" name="cmdLogin" value="Login" id="cmdLogin" class="btn btn-success"></form>`);
 }
 
 // Like module.tke.org: ASP.NET WebForms with the session id in the path,
