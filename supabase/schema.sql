@@ -74,6 +74,13 @@ create policy "public read" on public.events        for select to anon, authenti
 create policy "public read" on public.sync_runs     for select to anon, authenticated using (true);
 create policy "public read" on public.kra_snapshots for select to anon, authenticated using (true);
 
+-- Explicit grants, so this works whether or not the project "automatically
+-- exposes new tables": the page's key may only read; the sync's key may write.
+grant usage on schema public to anon, authenticated, service_role;
+grant select on public.kras, public.events, public.sync_runs, public.kra_snapshots to anon, authenticated;
+grant select, insert, update, delete on public.kras, public.events, public.sync_runs, public.kra_snapshots to service_role;
+grant usage, select on all sequences in schema public to service_role;
+
 -- Belt and braces: with no write policies RLS already refuses writes, and these
 -- revokes make the anon key fail before RLS is even checked.
 revoke insert, update, delete, truncate on public.kras          from anon, authenticated;

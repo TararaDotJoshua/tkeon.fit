@@ -1,11 +1,11 @@
 {
-  "_help": "URLs for the TKE national module. Selectors are tried in order (comma = any of). Run the 'Dashboard sync' workflow by hand after changing this file.",
-  "loginUrl": "FILL_ME",
-  "kraUrl": "FILL_ME",
+  "_help": "TKE member portal (my.tke.org). Sign in at loginUrl, then read the three KRA tables on kraUrl. Selectors match the login form as of Nov 2026 (comma = any of). Run the 'Dashboard sync' workflow by hand after changing this file.",
+  "loginUrl": "https://my.tke.org/Login.aspx",
+  "kraUrl": "https://my.tke.org/MyChapter/MyChapter.aspx",
   "selectors": {
-    "username": "input[autocomplete=username], input[type=email], input[name*=user i], input[id*=user i], input[name*=email i], input[id*=email i], input[name*=login i]",
-    "password": "input[type=password]",
-    "submit": "button[type=submit], input[type=submit], button:has-text(\"Log in\"), button:has-text(\"Sign in\"), button:has-text(\"Login\")"
+    "username": "#UserName, input[name=UserName]",
+    "password": "#Password",
+    "submit": "#cmdLogin, input[name=cmdLogin]"
   },
   "waitForTableSeconds": 45
 }

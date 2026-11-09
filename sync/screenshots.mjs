@@ -31,7 +31,7 @@ function serve() {
     if (url.pathname.endsWith('/')) file = path.join(file, 'index.html');
     try {
       let body = await readFile(file);
-      if (live) body = body.toString().replace("supabaseUrl: ''", `supabaseUrl: '${MOCK_DB}'`).replace("supabaseAnonKey: ''", "supabaseAnonKey: 'mock-anon-key'");
+      if (live) body = body.toString().replace(/supabaseUrl: '[^']*'/, `supabaseUrl: '${MOCK_DB}'`).replace(/supabaseAnonKey: '[^']*'/, "supabaseAnonKey: 'mock-anon-key'");
       res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
       res.end(body);
     } catch {
@@ -174,7 +174,7 @@ async function main() {
     for (const [w, h] of [[390, 844], [1280, 900]]) {
       const page = await browser.newPage({ viewport: { width: w, height: h } });
       for (const scene of scenes) {
-        await page.goto(`${base}/Dashboard/#${scene}`);
+        await page.goto(`${base}/Dashboard/?sample#${scene}`);
         await settle(page);
         const name = `members-${w}-${scene}`;
         await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: true });
@@ -271,7 +271,7 @@ async function main() {
       const fakeServiceJwt = [b64({ alg: 'HS256', typ: 'JWT' }), b64({ iss: 'supabase', role: 'service_role' }), 'not-a-real-signature'].join('.');
       await page.route(`${base}/Dashboard/keytest.html`, async (route) => {
         const html = (await readFile(path.join(ROOT, 'Dashboard/index.html'), 'utf8'))
-          .replace("supabaseUrl: ''", `supabaseUrl: '${MOCK_DB}'`).replace("supabaseAnonKey: ''", `supabaseAnonKey: '${fakeServiceJwt}'`);
+          .replace(/supabaseUrl: '[^']*'/, `supabaseUrl: '${MOCK_DB}'`).replace(/supabaseAnonKey: '[^']*'/, `supabaseAnonKey: '${fakeServiceJwt}'`);
         route.fulfill({ status: 200, contentType: 'text/html', body: html });
       });
       let called = false;
