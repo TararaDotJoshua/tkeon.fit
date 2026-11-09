@@ -16,7 +16,33 @@ const CAPTCHA_TEXT = /verify (that )?you('re| are) (a )?human|are you a robot|co
 const MFA_INPUTS = 'input[autocomplete="one-time-code"], input[name*="otp" i], input[id*="otp" i], input[name*="totp" i], input[name*="mfa" i], input[name*="2fa" i]';
 const MFA_TEXT = /verification code|two[- ]factor|2-step|multi[- ]factor|one[- ]time (pass)?code|authenticator app|enter the code (we|that was) sent/i;
 
-const noQuery = (u) => { try { const x = new URL(u); return x.origin + x.pathname; } catch { return '(unknown url)'; } };
+// module.tke.org is an ASP.NET site with "cookieless" sessions: the session id
+// rides in the path, e.g. /(S(abc123))/PortalLogin.aspx. While it lasts that id
+// is as good as a login, and this repo's Actions logs and the sync_runs table
+// are public, so it never goes in a log line or an error message.
+const SESSION_SEGMENT = /\/\((?:[A-Z]\([^()]*\))+\)(?=\/)/;
+const SESSION_SEGMENTS = new RegExp(SESSION_SEGMENT.source, 'g');
+
+/** Replace cookieless session ids in any text (log lines, error messages). */
+export const scrubSession = (s) => String(s).replace(SESSION_SEGMENTS, '/(session)');
+
+const noQuery = (u) => { try { const x = new URL(u); return scrubSession(x.origin + x.pathname); } catch { return '(unknown url)'; } };
+
+/** A URL copied from someone's browser, minus their (stale) session id. */
+function withoutSession(u) {
+  try { const x = new URL(u); x.pathname = x.pathname.replace(SESSION_SEGMENTS, ''); return x.href; } catch { return u; }
+}
+
+/** The configured page, inside the session this browser is in now. */
+export function inSession(target, current) {
+  const t = new URL(withoutSession(target));
+  try {
+    const c = new URL(current);
+    const m = c.pathname.match(SESSION_SEGMENT);
+    if (m && m.index === 0 && c.origin === t.origin) t.pathname = m[0] + t.pathname;
+  } catch { /* no current page yet */ }
+  return t.href;
+}
 
 async function visible(frame, selector) {
   for (const loc of await frame.locator(selector).all().catch(() => [])) {
@@ -131,6 +157,21 @@ async function rowCount(page) {
   return n;
 }
 
+/** Title, table count and column headers (th cells only, never data cells). */
+async function pageOutline(page) {
+  const parts = [];
+  for (const frame of page.frames()) {
+    const o = await frame.evaluate(() => {
+      const clip = (s, n) => (s || '').replace(/\s+/g, ' ').trim().slice(0, n);
+      const tables = [...document.querySelectorAll('table')];
+      const headers = tables.slice(0, 12).map((t) => [...t.querySelectorAll('th')].slice(0, 8).map((c) => clip(c.textContent, 30)).join(' | ')).filter(Boolean);
+      return { title: clip(document.title, 80), tables: tables.length, headers };
+    }).catch(() => null);
+    if (o) parts.push(`"${o.title}": ${o.tables} table(s)${o.headers.length ? `, headers: ${o.headers.map((h) => `[${h}]`).join(' ')}` : ''}`);
+  }
+  return `Page at ${noQuery(page.url())}: ${parts.join('; ') || 'unreadable'}`;
+}
+
 /**
  * @returns {Promise<Array>} raw tables for parseKraTables()
  */
@@ -144,18 +185,20 @@ export async function scrapeTke({ config, username, password, debugDir, log = co
   const context = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'en-US', timezoneId: 'America/New_York' });
   const page = await context.newPage();
   page.setDefaultTimeout(30_000);
+  let signedIn = false;
   try {
     log(`TKE: opening login page ${noQuery(config.loginUrl)}`);
-    const first = await page.goto(config.loginUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    const first = await page.goto(withoutSession(config.loginUrl), { waitUntil: 'domcontentloaded', timeout: 60_000 });
     if (first?.status() === 429) throw new StopError('The TKE site rate-limited us (HTTP 429). Stopped; try again later.');
     await settle(page);
     await assertNoChallenge(page, 'login page');
     if (await logIn(page, config, { username, password })) log('TKE: submitted login');
+    signedIn = true;
 
     // Portals often land on a home page or bounce through login again with a
     // return URL. Try the KRA page, and log in once more if we were sent back.
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const res = await page.goto(config.kraUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      const res = await page.goto(inSession(config.kraUrl, page.url()), { waitUntil: 'domcontentloaded', timeout: 60_000 });
       if (res?.status() === 429) throw new StopError('The TKE site rate-limited us (HTTP 429). Stopped; try again later.');
       await settle(page);
       await assertNoChallenge(page, 'KRA page');
@@ -172,11 +215,18 @@ export async function scrapeTke({ config, username, password, debugDir, log = co
     log(`TKE: found ${tables.length} KRA table(s)`);
     return tables;
   } catch (err) {
-    if (debugDir) {
+    // The debug screenshot is downloadable by anyone (public repo), so it's only
+    // taken before signing in. Past that, log the page's shape, not its contents.
+    if (debugDir && !signedIn) {
       await mkdir(debugDir, { recursive: true }).catch(() => {});
       await page.screenshot({ path: path.join(debugDir, 'tke-debug.png'), fullPage: true }).catch(() => {});
       log(`TKE: saved debug screenshot (${noQuery(page.url())})`);
+    } else if (signedIn) {
+      log(`TKE: signed in, so no screenshot (it could show member data). ${await pageOutline(page)}`);
     }
+    // Playwright's own errors quote the URL it was on, session id included.
+    if (err && typeof err.message === 'string') err.message = scrubSession(err.message);
+    if (err && typeof err.stack === 'string') err.stack = scrubSession(err.stack);
     throw err;
   } finally {
     await browser.close();

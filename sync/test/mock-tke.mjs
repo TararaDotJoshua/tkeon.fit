@@ -52,16 +52,59 @@ ${captcha ? '<iframe src="/recaptcha/api2/anchor?k=test" width="304" height="78"
 <button type="submit">Log In</button></form>`);
 }
 
+// Like module.tke.org: ASP.NET WebForms with the session id in the path,
+// /(S(id))/PortalLogin.aspx, no cookies, and a form copied from the real page.
+function cookielessLoginForm(error = '') {
+  return page('Portal login', `${error ? `<p class="error">${error}</p>` : ''}
+<form name="form1" method="post" action="./PortalLogin.aspx?ReturnUrl=%2f" id="form1" autocomplete="off">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="x" />
+<input name="UserName" type="text" id="UserName" class="txtbox" />
+<input name="Password" type="password" id="Password" class="txtbox" />
+<input type="submit" name="cmdLogin" value="Login" id="cmdLogin" style="width:150px;" />
+</form>`);
+}
+
 /**
- * @param {{mode?: 'normal'|'bounce'|'mfa'|'captcha'|'badlogin'}} opts
+ * @param {{mode?: 'normal'|'bounce'|'mfa'|'captcha'|'badlogin'|'cookieless'}} opts
  */
 export function startMockTke({ mode = 'normal' } = {}) {
-  const stats = { loginPosts: 0 };
+  const stats = { loginPosts: 0, sessions: [] };
+  const authed = new Set();
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
     const cookie = req.headers.cookie || '';
     const send = (status, html, headers = {}) => { res.writeHead(status, { 'content-type': 'text/html; charset=utf-8', ...headers }); res.end(html); };
     const redirect = (to, headers = {}) => { res.writeHead(302, { location: to, ...headers }); res.end(); };
+
+    if (mode === 'cookieless') {
+      const m = url.pathname.match(/^\/\(S\(([a-z0-9]+)\)\)(\/.*)$/);
+      // Unknown or missing session id: issue a new one, like ASP.NET does.
+      if (!m || !stats.sessions.includes(m[1])) {
+        const id = 'sess' + Math.random().toString(36).slice(2, 14);
+        stats.sessions.push(id);
+        return redirect(`/(S(${id}))${m ? m[2] : url.pathname}${url.search}`);
+      }
+      const [, id, rest] = m;
+      const at = (p) => `/(S(${id}))${p}`;
+      if (rest === '/PortalLogin.aspx' && req.method === 'GET') return send(200, cookielessLoginForm());
+      if (rest === '/PortalLogin.aspx' && req.method === 'POST') {
+        let body = '';
+        req.on('data', (c) => { body += c; });
+        req.on('end', () => {
+          stats.loginPosts++;
+          const f = new URLSearchParams(body);
+          if (f.get('UserName') !== TEST_USER || f.get('Password') !== TEST_PASS) return send(200, cookielessLoginForm('Login failed.'));
+          authed.add(id);
+          redirect(at('/Default.aspx'));
+        });
+        return;
+      }
+      if (!authed.has(id)) return redirect(at(`/PortalLogin.aspx?ReturnUrl=${encodeURIComponent(rest)}`));
+      if (rest === '/Default.aspx') return send(200, page('Dashboard', '<h1>Chapter dashboard</h1>'));
+      if (rest === '/KRA.aspx') return send(200, page('KRA', kraTablesHtml()));
+      if (rest.startsWith('/images/')) return send(200, '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"/>', { 'content-type': 'image/svg+xml' });
+      return send(404, page('Not found', 'Not found'));
+    }
 
     if (url.pathname === '/Account/Login' && req.method === 'GET') return send(200, loginForm('', mode === 'captcha'));
     if (url.pathname === '/Account/Login' && req.method === 'POST') {
@@ -104,8 +147,9 @@ export function startMockTke({ mode = 'normal' } = {}) {
       base,
       stats,
       config: {
-        loginUrl: `${base}/Account/Login`,
-        kraUrl: `${base}/Chapter/KRA`,
+        // Cookieless: URLs as copied from someone's browser, with a stale session id.
+        loginUrl: mode === 'cookieless' ? `${base}/(S(copiedfrombrowser1))/PortalLogin.aspx?ReturnUrl=%2f` : `${base}/Account/Login`,
+        kraUrl: mode === 'cookieless' ? `${base}/(S(copiedfrombrowser2))/KRA.aspx` : `${base}/Chapter/KRA`,
         selectors: JSON.parse(readFileSync(new URL('../tke.config.json', import.meta.url), 'utf8')).selectors,
         waitForTableSeconds: 15,
       },
