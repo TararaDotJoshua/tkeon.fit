@@ -1,11 +1,11 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { calendarRows } from '../lib/calendar.mjs';
 import { parseKraTables, parseValue, dotState, slugify } from '../lib/kra.mjs';
-import { scrapeTke, scrapeFile, StopError } from '../lib/tke.mjs';
+import { scrapeTke, scrapeFile, inSession, scrubSession, StopError } from '../lib/tke.mjs';
 import { startMockTke, kraTablesHtml, TEST_USER, TEST_PASS } from './mock-tke.mjs';
 
 const fixture = (f) => new URL(`./fixtures/${f}`, import.meta.url);
@@ -131,6 +131,37 @@ describe('TKE scrape (mock site)', { timeout: 120_000 }, () => {
       } finally { await mock.close(); }
     });
   }
+
+  test('module.tke.org style: session id in the URL is reused and never logged', async () => {
+    const mock = await startMockTke({ mode: 'cookieless' });
+    const lines = [];
+    try {
+      const raw = await scrapeTke({ config: mock.config, username: TEST_USER, password: TEST_PASS, log: (l) => lines.push(l) });
+      checkParsed(raw);
+      assert.equal(mock.stats.loginPosts, 1);
+      assert.ok(mock.stats.sessions.length >= 1);
+      for (const id of mock.stats.sessions) assert.ok(!lines.join('\n').includes(id), `log leaked session id: ${lines.join(' / ')}`);
+      assert.ok(lines.some((l) => l.includes('/(session)/KRA.aspx')), lines.join(' / '));
+
+      // A wrong page fails, and the error names the page without the session id.
+      // Past sign-in there's no screenshot (public artifact), only the page's outline.
+      const debugDir = mkdtempSync(path.join(tmpdir(), 'tke-debug-'));
+      const err = await scrapeTke({ config: { ...mock.config, kraUrl: mock.config.kraUrl.replace('KRA.aspx', 'Nope.aspx'), waitForTableSeconds: 2 }, username: TEST_USER, password: TEST_PASS, debugDir, log: (l) => lines.push(l) })
+        .then(() => null, (e) => e);
+      assert.ok(err, 'expected a failure on a page with no KRA tables');
+      assert.match(err.message, /\/\(session\)\/Nope\.aspx/);
+      for (const id of mock.stats.sessions) assert.ok(!(err.message + lines.join('\n')).includes(id));
+      assert.ok(!existsSync(path.join(debugDir, 'tke-debug.png')), 'no screenshot after signing in');
+      assert.ok(lines.some((l) => /no screenshot.*"Not found": 0 table/.test(l)), lines.join(' / '));
+    } finally { await mock.close(); }
+  });
+
+  test('inSession swaps a copied session id for the current one', () => {
+    assert.equal(inSession('https://m.test/(S(old))/KRA.aspx?x=1', 'https://m.test/(S(new))/Default.aspx'), 'https://m.test/(S(new))/KRA.aspx?x=1');
+    assert.equal(inSession('https://m.test/(S(old))/KRA.aspx', 'about:blank'), 'https://m.test/KRA.aspx');
+    assert.equal(inSession('https://m.test/Chapter/KRA', 'https://m.test/Home'), 'https://m.test/Chapter/KRA');
+    assert.equal(scrubSession('at https://m.test/(A(x1)S(y2))/a.aspx'), 'at https://m.test/(session)/a.aspx');
+  });
 
   for (const mode of ['mfa', 'captcha']) {
     test(`stops at ${mode} instead of getting around it`, async () => {

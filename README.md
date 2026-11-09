@@ -50,7 +50,8 @@ from Supabase. Until Supabase is set up, the page shows sample data.
 2. **Calendar.** In Google Calendar, open the chapter calendar's settings and
    copy "Secret address in iCal format".
 3. **TKE module.** Put the login page URL and the KRA page URL in
-   `sync/tke.config.json`.
+   `sync/tke.config.json`. The officer portal is module.tke.org. A URL copied
+   from your browser is fine: the sync swaps out the session ID in it.
 4. **GitHub secrets.** Under Settings → Secrets and variables → Actions, add
    `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GCAL_ICS_URL`, `TKE_USERNAME`
    and `TKE_PASSWORD`.
@@ -115,8 +116,12 @@ no horizontal scroll at 390 px.
 
 - **This repo is public.** Anyone signed in to GitHub can read the Actions logs
   and download the debug screenshot for 3 days. The sync never logs secrets and
-  redacts them from error messages, but the screenshot shows whatever TKE page
-  the login stopped on.
+  redacts them from error messages. The TKE module (module.tke.org) keeps its
+  session ID in the URL, like `/(S(abc123))/KRA.aspx`, so the sync shows that
+  part as `/(session)/` everywhere it logs or stores a URL. The debug screenshot
+  is only taken while still on the login screens. Once signed in, a failure logs
+  just the page title and table column headers, because a screenshot could show
+  member data.
 - **Private calendar events** (marked Private in Google Calendar) are left off,
   because the members' view is public. Event descriptions are never copied.
 - **Scheduled workflows in public repos** get switched off after 60 days with

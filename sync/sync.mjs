@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
 import { calendarRows, fetchIcs } from './lib/calendar.mjs';
 import { parseKraTables } from './lib/kra.mjs';
-import { scrapeTke, scrapeFile, StopError } from './lib/tke.mjs';
+import { scrapeTke, scrapeFile, scrubSession, StopError } from './lib/tke.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CHAPTER_TZ = 'America/New_York';
@@ -38,7 +38,8 @@ const doTke = !args.only || args.only === 'tke';
 
 // Never let a secret reach the database or the log, even inside an error message.
 const SECRETS = [env.SUPABASE_SERVICE_ROLE_KEY, env.GCAL_ICS_URL, env.TKE_USERNAME, env.TKE_PASSWORD].filter((s) => s && s.length >= 4);
-const redact = (s) => SECRETS.reduce((out, secret) => out.split(secret).join('[redacted]'), String(s));
+// scrubSession: TKE's session id lives in its URLs, and Playwright errors quote URLs.
+const redact = (s) => scrubSession(SECRETS.reduce((out, secret) => out.split(secret).join('[redacted]'), String(s)));
 const log = (...a) => console.log(redact(a.join(' ')));
 
 const chapterDay = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: CHAPTER_TZ }).format(d);
