@@ -860,7 +860,7 @@ function sampleData(now) {
         id: `${section}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
         section, name, kind, result_text: result, goal_text: goal,
         current: sampleValue(result), goal: sampleValue(goal), points, out_of: outOf, met, sort_order: i,
-        term_start: cumulative ? '2026-08-01' : null, due_date: cumulative ? '2027-05-01' : null, note: null,
+        term_start: cumulative ? '2026-06-01' : null, due_date: cumulative ? '2027-05-31' : null, note: null,
       });
     });
   }

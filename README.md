@@ -64,8 +64,10 @@ run skips itself with a notice instead of failing. After that, the calendar step
 is skipped while `GCAL_ICS_URL` is unset, and the TKE step is skipped while both
 URLs in `tke.config.json` still say `FILL_ME`. A half-finished TKE setup (one URL,
 or URLs without the login secrets) still fails, so mistakes show up.
-6. **Pace markers.** Fill in the KRA year dates in `supabase/pace.sql` and run
-   it. The sync never touches `term_start`, `due_date` or `note`, so hand edits
+6. **Pace markers.** After the first sync, run `supabase/pace.sql`. It dates
+   the cumulative KRAs (Initiates, Philanthropy, Service, St. Jude Dollars) to
+   TKE's KRA year, June 1 to May 31; each June, bump the years and run it again.
+   The sync never touches `term_start`, `due_date` or `note`, so hand edits
    stick. A `note` shows on the KRA card (on the TV only when there's room).
 
 If the TKE site asks for a CAPTCHA or a verification code, the sync stops and

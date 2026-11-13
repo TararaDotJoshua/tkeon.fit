@@ -1,11 +1,13 @@
 -- Pace markers for the cumulative KRAs (task 5).
--- Fill in the KRA year dates, then run in the Supabase SQL editor.
+-- Run in the Supabase SQL editor after the first sync has filled the kras table.
 -- The sync never touches term_start, due_date or note, so this sticks.
--- Run it again each KRA year with the new dates.
+--
+-- TKE's KRA year runs June 1 to May 31 (the award periods on my.tke.org read
+-- "6/1/2025 - 5/31/2026"). Each June, run this again with the next year's dates.
 
 update public.kras
-set term_start = date '2026-08-01',   -- FILL_ME: first day the KRA year counts from
-    due_date   = date '2027-05-01'    -- FILL_ME: day nationals totals the KRA year
+set term_start = date '2026-06-01',
+    due_date   = date '2027-05-31'
 where section = 'kra'
   and (   name ilike '%service%'
        or name ilike '%st. jude%'
