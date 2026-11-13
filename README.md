@@ -30,7 +30,8 @@ from Supabase. Until Supabase is set up, the page shows sample data.
 | `sync/tke.config.json` | TKE login URL, KRA page URL and login field selectors. |
 | `sync/check-rls.mjs` | Confirms the anon key can read but not write. |
 | `sync/screenshots.mjs` | Screenshots every screen at TV size and 390 px, and checks the layout rules. |
-| `.github/workflows/dashboard-sync.yml` | Runs the sync at minute 7 of every hour, or by hand. |
+| `.github/workflows/dashboard-sync.yml` | Runs the sync when Supabase starts it each hour, by hand, or on GitHub's own schedule every 6 hours as a backup. |
+| `supabase/schedule.sql` | The hourly trigger: the database starts the workflow at minute 7 of every hour. |
 
 ### Setup
 
@@ -126,6 +127,13 @@ no horizontal scroll at 390 px.
   member data.
 - **Private calendar events** (marked Private in Google Calendar) are left off,
   because the members' view is public. Event descriptions are never copied.
+- **The hourly trigger lives in Supabase.** GitHub's own cron is best-effort
+  and was running this job only every 6 to 9 hours, so `supabase/schedule.sql`
+  has the database start the workflow every hour instead. It uses a GitHub token
+  kept in Supabase Vault as `github_dispatch_token` (fine-grained, this repo
+  only, "Actions: Read and write"). If that token expires, runs fall back to
+  GitHub's 6-hour schedule and the dashboard says the data is hours old: make a
+  new token and replace the Vault secret.
 - **Scheduled workflows in public repos** get switched off after 60 days with
   no commits. The workflow re-enables itself once a day to reset that clock. If
   the dashboard ever says the data is hours old, check that the workflow is
