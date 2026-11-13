@@ -23,7 +23,7 @@ from Supabase. Until Supabase is set up, the page shows sample data.
 | Path | What it is |
 | --- | --- |
 | `Dashboard/index.html` | The whole page (HTML/CSS/JS, no build step). `CONFIG` at the top of the script holds the Supabase URL and anon key. |
-| `Dashboard/tke-logo-white.png` | **Add this:** the white TKE logo from [tke.org/logos](https://tke.org/logos). Until then the header shows a red "ΤΚΕ" box. |
+| `4-ms3z5b1p-r5cl.png` | The white TKE houseplate (the same file the main site's header uses). The dashboard header shows it. |
 | `supabase/schema.sql` | Tables and read-only policies. Run once in the Supabase SQL editor. |
 | `supabase/pace.sql` | Sets the KRA year dates for the pace markers. |
 | `sync/sync.mjs` | The hourly job: calendar + TKE KRA page → Supabase. |
