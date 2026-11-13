@@ -58,27 +58,47 @@ create table if not exists public.kra_snapshots (
   primary key (day, kra_id)
 );
 
+-- The chapter's place in nationals' public KRA ranking (one row, id 'kra') ------
+-- From https://tke.org/about-us/tke-today/chapter-rankings/. Only our own row's
+-- numbers are kept, plus how many chapters are ranked nationally and in our region.
+create table if not exists public.rankings (
+  id              text primary key,
+  national_rank   integer,
+  national_total  integer,
+  region          text,
+  region_rank     integer,
+  region_total    integer,
+  score_text      text,                         -- as the rankings page shows it, e.g. "43.79%"
+  since_yesterday integer,                      -- places moved; positive = up
+  since_week      integer,
+  prev_year_rank  integer,
+  updated_at      timestamptz not null default now()
+);
+
 -- Read-only access for the page ------------------------------------------------
 alter table public.kras          enable row level security;
 alter table public.events        enable row level security;
 alter table public.sync_runs     enable row level security;
 alter table public.kra_snapshots enable row level security;
+alter table public.rankings      enable row level security;
 
 drop policy if exists "public read" on public.kras;
 drop policy if exists "public read" on public.events;
 drop policy if exists "public read" on public.sync_runs;
 drop policy if exists "public read" on public.kra_snapshots;
+drop policy if exists "public read" on public.rankings;
 
 create policy "public read" on public.kras          for select to anon, authenticated using (true);
 create policy "public read" on public.events        for select to anon, authenticated using (true);
 create policy "public read" on public.sync_runs     for select to anon, authenticated using (true);
 create policy "public read" on public.kra_snapshots for select to anon, authenticated using (true);
+create policy "public read" on public.rankings      for select to anon, authenticated using (true);
 
 -- Explicit grants, so this works whether or not the project "automatically
 -- exposes new tables": the page's key may only read; the sync's key may write.
 grant usage on schema public to anon, authenticated, service_role;
-grant select on public.kras, public.events, public.sync_runs, public.kra_snapshots to anon, authenticated;
-grant select, insert, update, delete on public.kras, public.events, public.sync_runs, public.kra_snapshots to service_role;
+grant select on public.kras, public.events, public.sync_runs, public.kra_snapshots, public.rankings to anon, authenticated;
+grant select, insert, update, delete on public.kras, public.events, public.sync_runs, public.kra_snapshots, public.rankings to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
 -- Belt and braces: with no write policies RLS already refuses writes, and these
@@ -87,3 +107,4 @@ revoke insert, update, delete, truncate on public.kras          from anon, authe
 revoke insert, update, delete, truncate on public.events        from anon, authenticated;
 revoke insert, update, delete, truncate on public.sync_runs     from anon, authenticated;
 revoke insert, update, delete, truncate on public.kra_snapshots from anon, authenticated;
+revoke insert, update, delete, truncate on public.rankings      from anon, authenticated;

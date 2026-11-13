@@ -7,6 +7,7 @@ import { calendarRows } from '../lib/calendar.mjs';
 import { parseKraTables, parseValue, dotState, slugify } from '../lib/kra.mjs';
 import { scrapeTke, scrapeFile, inSession, scrubSession, StopError } from '../lib/tke.mjs';
 import { startMockTke, kraTablesHtml, TEST_USER, TEST_PASS } from './mock-tke.mjs';
+import { parseRankings, parseMove } from '../lib/rankings.mjs';
 
 const fixture = (f) => new URL(`./fixtures/${f}`, import.meta.url);
 
@@ -212,5 +213,48 @@ describe('TKE scrape (mock site)', { timeout: 120_000 }, () => {
 
   test('unset URLs fail with a clear message', async () => {
     await assert.rejects(scrapeTke({ config: { loginUrl: 'FILL_ME', kraUrl: 'FILL_ME' }, username: 'a', password: 'b' }), /not set in sync\/tke.config.json/);
+  });
+});
+
+describe('chapter rankings (tke.org public page)', () => {
+  const html = readFileSync(new URL('./fixtures/tke-rankings.html', import.meta.url), 'utf8');
+
+  test('reads our row from the KRA table, not the recruitment table', () => {
+    assert.deepEqual(parseRankings(html, 'Omicron-Nu'), {
+      national_rank: 92,
+      national_total: 20,       // rows in the cut-down fixture
+      region: '2',
+      region_rank: 10,          // nine Region 2 chapters are ranked above us in the fixture
+      region_total: 13,
+      score_text: '43.79%',
+      since_yesterday: 24,
+      since_week: 7,
+      prev_year_rank: 37,
+    });
+  });
+
+  test('name match is exact, so "Omicron-Nu" never picks up another chapter', () => {
+    assert.equal(parseRankings(html, 'omicron-nu ').national_rank, 92);
+    assert.throws(() => parseRankings(html, 'Omicron'), /isn't in the KRA ranking table/);
+    assert.equal(parseRankings(html, 'Omicron-Pi').national_rank, 200);
+  });
+
+  test('arrows become signed moves; a prev-year rank of 0 means none', () => {
+    assert.equal(parseMove('↑ 24'), 24);
+    assert.equal(parseMove('↓ 9'), -9);
+    assert.equal(parseMove('0'), 0);
+    assert.equal(parseMove('—'), null);
+    assert.equal(parseRankings(html, 'Beta-Lambda').since_yesterday, -52);
+    assert.equal(parseRankings(html, 'Nu-Theta Emerging Chapter').prev_year_rank, null);
+  });
+
+  test('tied chapters share a regional place', () => {
+    const a = parseRankings(html, 'Tau-Delta'), b = parseRankings(html, 'Pi-Beta');
+    assert.equal(a.national_rank, 180);
+    assert.equal(a.region_rank, b.region_rank);
+  });
+
+  test('a page without the table fails clearly', () => {
+    assert.throws(() => parseRankings('<html><body><table><tr><th>Rank</th><th>Chapter</th></tr><tr><td>1</td><td>X</td></tr></table></body></html>', 'Omicron-Nu'), /may have changed/);
   });
 });
