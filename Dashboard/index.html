@@ -311,7 +311,8 @@ const state = { data: null, error: null, lastGoodAt: null, failures: 0, scene: 0
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtNum = (n, max = 2) => Number(n).toLocaleString('en-US', { maximumFractionDigits: max });
-const fmtPts = (n) => (n == null ? '–' : fmtNum(n, 1));
+// Two decimals, like nationals' page (40.79, not 40.8).
+const fmtPts = (n) => (n == null ? '–' : fmtNum(n, 2));
 const timeFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
 const fmtTime = (d) => timeFmt.format(d).replace(':00', '');
 const fmtDay = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
