@@ -80,7 +80,7 @@ function mockSupabase(page, rows, runs, { down = false } = {}) {
     else if (table === 'kra_snapshots') body = Number(u.searchParams.get('offset') || 0) ? [] : rows.snapshots;
     else if (table === 'rankings') body = [{ id: 'kra', national_rank: 92, national_total: 208, region: '2', region_rank: 30, region_total: 52, score_text: '43.79%', since_yesterday: 24, since_week: -7, prev_year_rank: 37, updated_at: new Date().toISOString() }];
     else if (table === 'sync_runs') body = u.searchParams.get('ok') === 'eq.true' ? [runs.lastOk].filter(Boolean) : [runs.lastRun].filter(Boolean);
-    else return route.fulfill({ status: 404, body: '[]' });
+    else return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }); // goals and board tables: empty
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
   });
 }
@@ -213,7 +213,7 @@ async function main() {
           if (h.tiles.join() !== '28/90,3/11,0/10') problems.push(`tiles were ${h.tiles.join()}`);
           if (h.rows !== 9) problems.push(`${h.rows} KRA rows, expected 9`);
           if (!h.trendLine) problems.push('trend line missing');
-          if (!/#92 of 208/.test(h.ranks) || !/#30 of 52/.test(h.ranks) || !/Up 24 since yesterday/.test(h.ranks) || !/Down 7 since last week/.test(h.ranks)) problems.push(`ranks were "${h.ranks}"`);
+          if (!/#92 of 208/.test(h.ranks) || !/#30 of 52/.test(h.ranks) || /since|as of/i.test(h.ranks)) problems.push(`ranks were "${h.ranks}"`);
         }
         if (scene === 'week' && !(await page.locator('#nextup .nu-title').count())) problems.push('next-up is missing from the week screen');
         await page.screenshot({ path: path.join(OUT, `live-tv-${scene}.png`) });

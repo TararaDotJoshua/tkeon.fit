@@ -1,0 +1,15 @@
+{
+  "name": "Omicron-Nu Chapter",
+  "short_name": "Omicron-Nu",
+  "description": "KRAs, goals, the task board and this week's events for the Omicron-Nu Chapter of Tau Kappa Epsilon.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F4F4F5",
+  "theme_color": "#AD2624",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

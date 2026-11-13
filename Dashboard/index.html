@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Omicron-Nu dashboard</title>
 <meta name="description" content="Key Result Areas and this week's events for the Omicron-Nu Chapter of Tau Kappa Epsilon.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#AD2624">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Omicron-Nu">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap">
@@ -101,12 +107,15 @@
   .logo { display: block; height: 3.4rem; width: 3.4rem; }
   .logo-on-dark, html.tv .logo-on-light { display: none; }
   html.tv .logo-on-dark { display: block; }
-  .chapter { font-size: 1.35rem; line-height: 1.1; font-weight: 900; }
-  .sub { color: var(--head-muted); font-size: 0.85rem; margin-top: 0.15rem; }
+  .brand > div { min-width: 0; }
+  .chapter { font-size: 1.35rem; line-height: 1.15; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sub { color: var(--head-muted); font-size: 0.8rem; margin-top: 0.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 700px) { html:not(.tv) .chapter { font-size: 1.1rem; } }
+  @media (max-width: 360px) { html:not(.tv) .chapter { font-size: 0.92rem; } html:not(.tv) .logo-wrap { margin-right: 0.35rem; } }
   html.tv .logo { height: 5.6rem; width: 5.6rem; }
   html.tv .logo-wrap { margin: -0.7rem 0.7rem -0.7rem -0.5rem; }
   html.tv .chapter { font-size: 2.2rem; }
-  html.tv .sub { font-size: 1.05rem; }
+  html.tv .sub { font-size: 1rem; }
 
   .clock { display: none; text-align: right; flex: none; }
   html.tv .clock { display: block; }
@@ -123,7 +132,6 @@
   .rk-num span { font-size: 0.55em; font-weight: 700; color: var(--muted); }
   .rk-moves { color: var(--muted); font-size: 0.85rem; line-height: 1.45; white-space: nowrap; min-width: 0; }
   .rk-move { display: block; }
-  .arrow { display: inline-block; width: 0.7em; height: 0.7em; margin-right: 0.4em; }
   html:not(.tv) .ranks { max-width: 1180px; margin: 0.9rem auto 0; padding: 0 1rem; }
   html:not(.tv) .rk { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.9rem; flex-wrap: wrap; }
   @media (max-width: 560px) {
@@ -157,6 +165,29 @@
   .tab:hover { color: var(--text); }
   .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--cherry); }
   .tab:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
+  .account { flex: none; margin-left: 0.6rem; }
+  html.tv .account { display: none; }
+  .gtabs, .subtabs { display: none; }
+  html:not(.can-recruit) .needs-recruit { display: none !important; } /* the Recruitment tab, until an admin lets you in */
+  /* Phones: three tabs in a bottom bar, like a native app (KRA, This week,
+     Goals). KRA shows the scoreboard with required & bonus under it; Goals has
+     a Goals | Board switch at the top. The page keeps clear of the notch and
+     the home indicator. Desktop keeps one tab per screen at the top. */
+  @media (max-width: 700px) {
+    html:not(.tv) body { padding-bottom: 4.2rem; padding-bottom: calc(3.9rem + env(safe-area-inset-bottom, 0px)); }
+    html:not(.tv) .top { padding-top: calc(0.7rem + env(safe-area-inset-top, 0px)); border-bottom: 1px solid var(--line); }
+    html:not(.tv) .tabs { display: none; }
+    html:not(.tv) .gtabs { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; padding: 0 0.4rem; padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--head-bg); border-top: 1px solid var(--line); }
+    .gtab { -webkit-appearance: none; appearance: none; flex: 1 1 0; min-height: 3.6rem; padding: 0.4rem 0.1rem 0.35rem; background: none; border: 0; border-top: 3px solid transparent; color: var(--muted); cursor: pointer; font: 700 0.72rem/1.1 var(--font); -webkit-tap-highlight-color: transparent; }
+    .gtab[aria-selected="true"] { border-top-color: var(--cherry); color: var(--cherry); }
+    .gtab:focus-visible, .subtab:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
+    .gtab svg { display: block; width: 1.5rem; height: 1.5rem; margin: 0 auto 0.15rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    html:not(.tv) .subtabs:not(:empty) { display: flex; margin: 0.9rem 1rem 0; padding: 0.2rem; background: var(--track); border-radius: 0.7rem; }
+    .subtab { -webkit-appearance: none; appearance: none; flex: 1 1 0; min-height: 38px; padding: 0.3rem 0.5rem; background: none; border: 0; border-radius: 0.55rem; color: var(--muted); cursor: pointer; font: 700 0.9rem/1.1 var(--font); -webkit-tap-highlight-color: transparent; }
+    .subtab[aria-selected="true"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
+    html:not(.tv) #scene-required:not([hidden]) { margin-top: 1rem; } /* sits under the scoreboard in the KRA tab */
+    html:not(.tv) .ranks.not-kra { display: none; } /* on a phone the rankings show only in the KRA tab */
+  }
 
   .notices { max-width: 1180px; margin: 0 auto; padding: 0 1rem; }
   .notices:empty { display: none; }
@@ -181,6 +212,9 @@
   html.tv .board { height: 100%; grid-template-columns: 29rem minmax(0, 1fr); grid-gap: 1.4rem; }
   .side { display: grid; grid-template-columns: minmax(0, 1fr); grid-gap: 1rem; min-width: 0; }
   html.tv .side { grid-template-rows: auto auto minmax(0, 1fr); grid-gap: 1.1rem; min-height: 0; }
+  /* No trend panel yet (under two days of history): the total fills the column instead. */
+  html.tv .side.no-trend { grid-template-rows: minmax(0, 1fr) auto; }
+  html.tv .side.no-trend .hero { display: flex; flex-direction: column; justify-content: center; }
 
   .hero { padding: 1.1rem 1.2rem 1.2rem; }
   .hero-num { font-weight: 900; font-size: 4.4rem; line-height: 1; margin: 0.35rem 0 0.9rem; letter-spacing: -0.01em; }
@@ -209,7 +243,6 @@
 
   .trend { padding: 1rem 1.2rem 0.9rem; display: flex; flex-direction: column; min-height: 0; }
   .trend-head { display: flex; justify-content: space-between; align-items: baseline; }
-  .trend-empty { color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; }
   .chart { margin-top: 1.6rem; flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
   .plot { position: relative; height: 8.5rem; flex: 1 1 auto; min-height: 5rem; touch-action: pan-y; }
   .plot svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
@@ -223,7 +256,6 @@
   .tip { position: absolute; top: 0; padding: 0.25rem 0.5rem; border-radius: 0.3rem; background: var(--text); color: var(--panel); font-size: 0.8rem; white-space: nowrap; pointer-events: none; }
   .xaxis { display: flex; justify-content: space-between; color: var(--faint); font-size: 0.75rem; margin-top: 0.35rem; }
   html.tv .trend { padding: 1.2rem 1.5rem 1.1rem; }
-  html.tv .trend-empty { font-size: 1.1rem; }
   html.tv .ylab, html.tv .xaxis { font-size: 0.95rem; }
   html.tv .endlab { font-size: 1.15rem; }
   html.tv .plot .line { stroke-width: 3; }
@@ -348,6 +380,27 @@
   html.tv .ev-title { font-size: 1.25rem; }
   html.tv .more, html.tv .empty-day { font-size: 1.05rem; }
 
+  /* ---------- Event details (members tap an event) ---------- */
+  html:not(.tv) .ev[data-ev] { cursor: pointer; }
+  html:not(.tv) .ev[data-ev]:hover .ev-title { text-decoration: underline; }
+  .ev[data-ev]:focus-visible { outline: 2px solid var(--cherry); outline-offset: 2px; }
+  body.pop-open { overflow: hidden; }
+  .pop-back { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 60; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, 0.45); }
+  .pop { width: 100%; max-width: 30rem; max-height: 85vh; overflow-y: auto; padding: 1.1rem 1.2rem 1.4rem; padding-bottom: calc(1.4rem + env(safe-area-inset-bottom, 0px)); border-radius: 1rem 1rem 0 0; background: var(--panel); box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.25); animation: pop-up 0.22s ease-out; }
+  .pop-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .pop h2 { min-width: 0; margin-right: 0.75rem; font-size: 1.4rem; font-weight: 900; line-height: 1.15; word-wrap: break-word; }
+  .pop-close { -webkit-appearance: none; appearance: none; flex: none; width: 44px; height: 44px; margin: -0.5rem -0.6rem 0 0; border: 0; border-radius: 50%; background: none; color: var(--muted); cursor: pointer; font: 400 1.6rem/1 var(--font); }
+  .pop-close:focus-visible { outline: 2px solid var(--cherry); }
+  .pop-status { display: inline-block; margin-top: 0.7rem; padding: 0.25rem 0.6rem; border-radius: 0.3rem; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .pop-status.is-now { background: var(--cherry); border-color: var(--cherry); color: #fff; }
+  .pop-row { margin-top: 0.9rem; padding-top: 0.9rem; border-top: 1px solid var(--line); }
+  .pop-main { font-weight: 700; font-size: 1.05rem; word-wrap: break-word; }
+  .pop-sub { color: var(--muted); margin-top: 0.1rem; }
+  .pop a { display: inline-block; margin-top: 0.35rem; color: var(--cherry); font-weight: 700; word-break: break-all; }
+  @keyframes pop-up { from { transform: translateY(14%); opacity: 0.4; } to { transform: none; opacity: 1; } }
+  @media (min-width: 701px) { .pop-back { align-items: center; } .pop { border-radius: 1rem; } }
+  @media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
+
   /* ---------- TV rotation indicator ---------- */
   .rotation { display: none; }
   html.tv .rotation { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 1rem; margin-top: 1rem; flex: none; }
@@ -375,22 +428,29 @@
         <img class="logo logo-on-dark" src="../4-ms3z5b1p-r5cl.png" alt="Tau Kappa Epsilon" onerror="this.hidden=true">
       </span>
       <div>
-        <h1 class="chapter">Omicron-Nu Chapter</h1>
-        <p class="sub">Tau Kappa Epsilon &middot; <span id="updated">Loading…</span></p>
+        <h1 class="chapter">Tau Kappa Epsilon - ON</h1>
+        <p class="sub" id="updated">Loading…</p>
       </div>
     </div>
+    <div class="account" id="account"></div>
     <div class="ranks" id="ranks-tv"></div>
     <div class="clock" aria-hidden="true"><div class="clock-time" id="clock-time"></div><div class="clock-date" id="clock-date"></div></div>
   </header>
   <nav class="tabs" role="tablist" aria-label="Dashboard screens" id="tabs"></nav>
   <div class="ranks" id="ranks-m"></div>
+  <div class="subtabs" id="subtabs" role="tablist" aria-label="Screens in this tab"></div>
   <div class="notices" id="notices" role="status" aria-live="polite"></div>
   <main id="main">
     <section class="scene" id="scene-kras" role="tabpanel" aria-labelledby="tab-kras"></section>
     <section class="scene" id="scene-required" role="tabpanel" aria-labelledby="tab-required"></section>
     <section class="scene" id="scene-week" role="tabpanel" aria-labelledby="tab-week"></section>
+    <section class="scene" id="scene-goals" role="tabpanel" aria-labelledby="tab-goals" hidden><p class="empty">Loading…</p></section>
+    <section class="scene" id="scene-board" role="tabpanel" aria-labelledby="tab-board" hidden><p class="empty">Loading…</p></section>
+    <section class="scene" id="scene-recruit" role="tabpanel" aria-labelledby="tab-recruit" hidden><p class="empty">Loading…</p></section>
+    <section class="scene" id="scene-settings" aria-label="Settings" hidden><p class="empty">Loading…</p></section>
   </main>
   <div class="rotation" id="rotation" aria-hidden="true"></div>
+  <nav class="gtabs" id="gtabs" role="tablist" aria-label="Dashboard tabs"></nav>
 </div>
 <noscript><p style="padding:1rem">This dashboard needs JavaScript.</p></noscript>
 
@@ -413,16 +473,35 @@ const STALE_MS = 3 * 3600e3;      // warn when the last good sync is older than 
 const FETCH_TIMEOUT_MS = 15e3;
 const DAY_MS = 864e5;
 const CACHE_KEY = 'on-dashboard-v2';
+const keyProblem = secretKeyIn(CONFIG.supabaseAnonKey);
+const SAMPLE = params.has('sample') || !CONFIG.supabaseUrl || !CONFIG.supabaseAnonKey || Boolean(keyProblem);
 const SCENES = [
-  { id: 'kras', label: 'Scoreboard' },
-  { id: 'required', label: 'Required & bonus' },
-  { id: 'week', label: 'This week' },
+  { id: 'kras', label: 'Scoreboard', group: 'kra' },
+  { id: 'required', label: 'Required & bonus', group: 'kra' },
+  { id: 'week', label: 'This week', group: 'week' },
 ];
+// On a phone the screens are grouped into three bottom tabs. `stack` shows a
+// group's screens one under another; otherwise a switch at the top picks one.
+const GROUPS = [
+  { id: 'kra', label: 'KRA', stack: true, icon: '<path d="M5 20V11M12 20V4M19 20v-6M2 20h20"/>' },
+  { id: 'week', label: 'This week', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>' },
+];
+// Members only (never the TV): goals, the task board and settings. Dashboard/app/
+// draws these screens and handles sign-in; it loads on demand.
+if (!TV && !SAMPLE) {
+  SCENES.push({ id: 'goals', label: 'Goals', group: 'goals', app: true });
+  SCENES.push({ id: 'board', label: 'Board', group: 'goals', app: true });
+  SCENES.push({ id: 'recruit', label: 'Recruitment', group: 'recruit', app: true, locked: true }); // only for brothers an admin let in
+  SCENES.push({ id: 'settings', label: 'Settings', app: true, noTab: true }); // opened from the profile photo
+  GROUPS.push({ id: 'goals', label: 'Goals', icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>' });
+  GROUPS.push({ id: 'recruit', label: 'Recruit', locked: true, icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.7.8 2.7 2.5 3 5.2"/>' });
+}
+const isPhone = function () { return !TV && window.matchMedia && matchMedia('(max-width: 700px)').matches; };
+const groupOf = function (id) { for (let i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i]; return null; };
+const lastInGroup = {}; // which screen of a group was open last, so its tab returns there
 
 const $ = function (id) { return document.getElementById(id); };
 const sceneEls = SCENES.map(function (s) { return $('scene-' + s.id); });
-const keyProblem = secretKeyIn(CONFIG.supabaseAnonKey);
-const SAMPLE = params.has('sample') || !CONFIG.supabaseUrl || !CONFIG.supabaseAnonKey || Boolean(keyProblem);
 
 const state = { data: null, error: null, lastGoodAt: null, failures: 0, scene: 0, paused: ROTATE_S === 0, lastAttempt: 0 };
 
@@ -541,7 +620,7 @@ function trendChart(snapshots) {
   const byDay = {};
   snapshots.forEach(function (s) { byDay[s.day] = (byDay[s.day] || 0) + (Number(s.points) || 0); });
   const days = Object.keys(byDay).sort();
-  if (days.length < 2) return '<p class="trend-empty">The trend line starts once there are two days of history.</p>';
+  if (days.length < 2) return ''; // not enough history for a line yet: the panel stays hidden
   const pts = days.map(function (d) { return { day: d, t: new Date(d + 'T12:00:00').getTime(), v: round2(byDay[d]) }; });
   const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
   const yMax = niceMax(Math.max.apply(null, pts.map(function (p) { return p.v; })) * 1.12);
@@ -616,8 +695,9 @@ function renderKras(d, now) {
       pbar(sec.out_of > 0 ? sec.points / sec.out_of * 100 : 0) + '<div class="tile-cap">' + sec.met + ' of ' + sec.rows.length + ' met</div></div>';
   };
   const anyPace = kras.some(function (k) { return paceOf(k, now) != null; });
+  const trend = trendChart(d.snapshots || []);
   return '<div class="board">' +
-    '<div class="side">' +
+    '<div class="side' + (trend ? '' : ' no-trend') + '">' +
       '<section class="panel hero" aria-label="KRA total">' +
         '<div class="eyebrow">KRA total</div>' +
         '<div class="hero-num">' + fmtPts(t.all.points) + '<span>%</span></div>' +
@@ -625,7 +705,7 @@ function renderKras(d, now) {
         (year ? '<div class="hero-cap"><span><span class="tick-key"></span>' + Math.round(year.elapsed * 100) + '% of the KRA year gone</span><span>' + year.daysLeft + ' days left</span></div>' : '') +
       '</section>' +
       '<div class="tiles">' + tile('KRAs', t.kra) + tile('Required', t.required) + tile('Bonus', t.bonus) + '</div>' +
-      '<section class="panel trend" aria-label="KRA total by day"><div class="trend-head"><span class="eyebrow">KRA total by day</span></div>' + trendChart(d.snapshots || []) + '</section>' +
+      (trend ? '<section class="panel trend" aria-label="KRA total by day"><div class="trend-head"><span class="eyebrow">KRA total by day</span></div>' + trend + '</section>' : '') +
     '</div>' +
     '<section class="panel ktable" aria-label="Key Result Areas">' +
       '<div class="khead"><span></span><span>Key Result Area</span><span>Progress to goal' + (anyPace ? '<span class="key"><span class="tick-key"></span>on pace today</span>' : '') + '</span><span>Points</span></div>' +
@@ -687,16 +767,21 @@ function eventsOn(events, dayStart) {
   return out.sort(function (a, b) { return a.rank - b.rank || a.sort - b.sort || a.e.title.localeCompare(b.e.title); });
 }
 
+let weekEvents = []; // the events on screen, so a tap can open one
+
 function renderWeek(d, now) {
+  weekEvents = [];
   const today = startOfDay(now);
   const days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return addDays(today, i); });
   const cols = days.map(function (day, i) {
     const evs = eventsOn(d.events || [], day);
     const name = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : day.toLocaleDateString('en-US', { weekday: 'long' });
     const items = evs.map(function (x) {
+      // Members can tap an event for its details; the TV has nobody to tap it.
+      const tap = TV ? '' : ' data-ev="' + (weekEvents.push(x.e) - 1) + '" tabindex="0" role="button"';
       return x.e.all_day
-        ? '<li class="ev ev-allday"><span class="ev-title">' + esc(x.e.title) + '</span></li>'
-        : '<li class="ev"><span class="ev-time">' + esc(x.label) + '</span><span class="ev-title">' + esc(x.e.title) + '</span>' + (x.e.location ? '<span class="ev-loc">' + esc(x.e.location) + '</span>' : '') + '</li>';
+        ? '<li class="ev ev-allday"' + tap + '><span class="ev-title">' + esc(x.e.title) + '</span></li>'
+        : '<li class="ev"' + tap + '><span class="ev-time">' + esc(x.label) + '</span><span class="ev-title">' + esc(x.e.title) + '</span>' + (x.e.location ? '<span class="ev-loc">' + esc(x.e.location) + '</span>' : '') + '</li>';
     }).join('');
     return '<section class="panel day' + (i === 0 ? ' is-today' : '') + '" aria-label="' + esc(name) + ', ' + esc(fmtDay(day)) + '">' +
       '<header class="day-head"><span class="dow">' + esc(name) + '</span><span class="date">' + esc(fmtDay(day)) + '</span></header>' +
@@ -705,6 +790,80 @@ function renderWeek(d, now) {
   }).join('');
   return '<div class="week-head"><h2>This week</h2><span class="range">' + esc(fmtDay(days[0])) + ' – ' + esc(fmtDay(days[6])) + '</span><div class="nextup" id="nextup"></div></div>' +
     '<div class="week">' + cols + '</div>';
+}
+
+// ---------- Event details (members) ----------
+
+const LONG_DAY = { weekday: 'long', month: 'long', day: 'numeric' };
+function hoursText(mins) { return mins < 60 ? mins + ' min' : Math.floor(mins / 60) + ' h' + (mins % 60 ? ' ' + (mins % 60) + ' min' : ''); }
+
+/** The day line, the time line, and when the event starts and ends. */
+function eventWhen(e) {
+  if (e.all_day) {
+    const s = e.starts_at.slice(0, 10), en = e.ends_at ? e.ends_at.slice(0, 10) : '';
+    const first = new Date(s + 'T12:00:00');
+    const last = en > s ? addDays(new Date(en + 'T12:00:00'), -1) : first; // the stored end date is the day after
+    const one = ymd(first) === ymd(last);
+    return {
+      main: first.toLocaleDateString('en-US', LONG_DAY) + (one ? '' : ' – ' + last.toLocaleDateString('en-US', LONG_DAY)),
+      sub: 'All day', start: startOfDay(first).getTime(), end: addDays(startOfDay(last), 1).getTime(),
+    };
+  }
+  const s = new Date(e.starts_at), en = e.ends_at ? new Date(e.ends_at) : s;
+  const mins = Math.round((en - s) / 60e3);
+  let time = fmtTime(s);
+  if (mins > 0) time = s.toDateString() === en.toDateString() ? fmtRange(s, en) : fmtTime(s) + ' – ' + fmtDay(en) + ', ' + fmtTime(en);
+  return { main: s.toLocaleDateString('en-US', LONG_DAY), sub: time + (mins > 0 ? ' · ' + hoursText(mins) : ''), start: s.getTime(), end: Math.max(en.getTime(), s.getTime() + 1) };
+}
+
+function eventStatus(w, now) {
+  if (now >= w.start && now < w.end) return 'Happening now';
+  if (now >= w.end) return 'Ended';
+  const mins = Math.max(1, Math.round((w.start - now) / 60e3));
+  if (mins < 1440) return 'Starts in ' + hoursText(mins);
+  const days = Math.round(mins / 1440);
+  return 'Starts in ' + days + ' day' + (days === 1 ? '' : 's');
+}
+
+/** A location is a web address (link to it) or a place (link to a map). */
+function locationHtml(loc) {
+  const t = String(loc).trim();
+  const web = /^https?:\/\/\S+$/i.test(t) ? t : /^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\/\S*)?$/i.test(t) ? 'https://' + t : null;
+  return '<div class="pop-main">' + esc(t) + '</div>' + (web
+    ? '<a href="' + esc(web) + '" target="_blank" rel="noopener noreferrer">Open link</a>'
+    : '<a href="https://maps.apple.com/?q=' + encodeURIComponent(t) + '" target="_blank" rel="noopener noreferrer">Open in Maps</a>');
+}
+
+let popFrom = null;
+function closeEvent() {
+  const el = $('event-pop');
+  if (!el) return;
+  el.parentNode.removeChild(el);
+  document.body.classList.remove('pop-open');
+  if (popFrom && popFrom.focus && document.body.contains(popFrom)) popFrom.focus();
+  popFrom = null;
+}
+
+function openEvent(e, from) {
+  closeEvent();
+  const w = eventWhen(e);
+  const status = eventStatus(w, Date.now());
+  const back = document.createElement('div');
+  back.className = 'pop-back';
+  back.id = 'event-pop';
+  back.innerHTML = '<div class="pop" role="dialog" aria-modal="true" aria-label="' + esc(e.title) + '">' +
+    '<div class="pop-top"><h2>' + esc(e.title) + '</h2><button class="pop-close" type="button" aria-label="Close">&times;</button></div>' +
+    '<span class="pop-status' + (status === 'Happening now' ? ' is-now' : '') + '">' + esc(status) + '</span>' +
+    '<div class="pop-row"><div class="eyebrow">When</div><div class="pop-main">' + esc(w.main) + '</div><div class="pop-sub">' + esc(w.sub) + '</div></div>' +
+    (e.location ? '<div class="pop-row"><div class="eyebrow">Where</div>' + locationHtml(e.location) + '</div>' : '') +
+  '</div>';
+  back.addEventListener('click', function (ev) {
+    if (ev.target === back || (ev.target.closest && ev.target.closest('.pop-close'))) closeEvent();
+  });
+  document.body.appendChild(back);
+  document.body.classList.add('pop-open');
+  popFrom = from || null;
+  back.querySelector('.pop-close').focus();
 }
 
 // ---------- Next event ----------
@@ -742,15 +901,6 @@ function renderNextUp(now) {
 
 // ---------- Rankings ----------
 
-const ARROW_UP = '<svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4.6 8H.4z" style="fill:var(--met)"/></svg>';
-const ARROW_DOWN = '<svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 9L.4 1h9.2z" style="fill:var(--behind)"/></svg>';
-
-function moveHtml(n, since) {
-  if (n == null) return '';
-  if (n === 0) return '<span class="rk-move">No change ' + since + '</span>';
-  return '<span class="rk-move">' + (n > 0 ? ARROW_UP + 'Up ' : ARROW_DOWN + 'Down ') + Math.abs(n) + ' ' + since + '</span>';
-}
-
 /** The chapter's place in nationals' KRA ranking, from tke.org's public rankings page. */
 function ranksHtml(r, now) {
   if (!r || r.national_rank == null) return '';
@@ -760,8 +910,8 @@ function ranksHtml(r, now) {
   const age = r.updated_at ? now - Date.parse(r.updated_at) : 0;
   return '<div class="rk">' + item('National rank', r.national_rank, r.national_total) +
     (r.region_rank != null ? item('Region ' + r.region + ' rank', r.region_rank, r.region_total) : '') +
-    '<div class="rk-moves">' + moveHtml(r.since_yesterday, 'since yesterday') + moveHtml(r.since_week, 'since last week') +
-      (age > 36 * 3600e3 ? '<span class="rk-move">Ranks as of ' + esc(fmtDay(new Date(r.updated_at))) + '</span>' : '') + '</div></div>';
+    // Only said when the ranks are stale (the rankings page couldn't be read for over a day).
+    (age > 36 * 3600e3 ? '<div class="rk-moves"><span class="rk-move">Ranks as of ' + esc(fmtDay(new Date(r.updated_at))) + '</span></div>' : '') + '</div>';
 }
 
 function renderRanks(now) {
@@ -778,8 +928,8 @@ function updatedText(d, now) {
   if (!d.lastOk) return 'Not synced yet';
   const t = Date.parse(d.lastOk.ran_at);
   const mins = Math.max(0, Math.round((now - t) / 60e3));
-  const ago = mins < 1 ? 'just now' : mins < 90 ? mins + ' min ago' : Math.round(mins / 60) + ' h ago';
-  return TV ? 'Updated ' + fmtWhen(t) : 'Updated ' + fmtWhen(t) + ' · ' + ago;
+  const hours = Math.round(mins / 60);
+  return 'Updated ' + (mins < 1 ? 'just now' : mins < 90 ? mins + ' min ago' : hours < 48 ? hours + ' h ago' : Math.round(hours / 24) + ' days ago');
 }
 
 function noticeList(d, now) {
@@ -804,6 +954,7 @@ function renderAll() {
   const blank = { kras: [], events: [], snapshots: [] };
   const renderers = [renderKras, renderRequired, renderWeek];
   sceneEls.forEach(function (el, i) {
+    if (!renderers[i]) return; // the Goals and Board screens draw themselves
     try { el.innerHTML = renderers[i](d || blank, now); } catch (err) {
       console.error(err);
       el.innerHTML = "<p class=\"empty\">Couldn't draw this screen. The rest of the dashboard still works.</p>";
@@ -812,6 +963,7 @@ function renderAll() {
   renderNextUp(now);
   wireCharts();
   fitTv();
+  if (!TV) document.dispatchEvent(new Event('dash:data'));
 }
 
 // TV only: make each screen fit without scrolling.
@@ -937,19 +1089,33 @@ async function refresh() {
 let rotateTimer = 0;
 function showScene(i, opts) {
   state.scene = (i + SCENES.length) % SCENES.length;
+  const cur = SCENES[state.scene];
+  const group = groupOf(cur.group);
+  const stacked = isPhone() && group && group.stack;
   SCENES.forEach(function (s, j) {
-    const on = j === state.scene;
+    const on = j === state.scene || Boolean(stacked && s.group === cur.group);
     sceneEls[j].classList.toggle('is-active', on);
     if (TV) sceneEls[j].setAttribute('aria-hidden', String(!on));
     else {
       sceneEls[j].hidden = !on;
       const tab = $('tab-' + s.id);
-      tab.setAttribute('aria-selected', String(on));
-      tab.tabIndex = on ? 0 : -1;
+      if (tab) { tab.setAttribute('aria-selected', String(j === state.scene)); tab.tabIndex = j === state.scene ? 0 : -1; }
     }
   });
   if (!TV) {
-    if (opts && opts.fromUser) history.replaceState(null, '', '#' + SCENES[state.scene].id);
+    if (cur.group) lastInGroup[cur.group] = cur.id;
+    $('ranks-m').classList.toggle('not-kra', cur.group !== 'kra');
+    GROUPS.forEach(function (g) { $('gtab-' + g.id).setAttribute('aria-selected', String(g.id === cur.group)); });
+    // The Goals | Board switch (any group with more than one screen that isn't stacked).
+    const mates = group && !group.stack ? SCENES.filter(function (s) { return s.group === group.id; }) : [];
+    $('subtabs').innerHTML = mates.length > 1 ? mates.map(function (s) {
+      return '<button class="subtab" role="tab" type="button" data-scene="' + s.id + '" aria-selected="' + (s.id === cur.id) + '">' + esc(s.label) + '</button>';
+    }).join('') : '';
+    if (opts && opts.fromUser) history.replaceState(null, '', '#' + cur.id);
+    // A tab starts at the top; in the stacked KRA tab a link to "required" goes to that part.
+    if (opts && opts.fromUser) window.scrollTo(0, stacked && cur.id !== 'kras' ? sceneEls[state.scene].offsetTop - 8 : 0);
+    if (cur.app) loadApp();
+    document.dispatchEvent(new CustomEvent('dash:scene', { detail: cur.id }));
     return;
   }
   Array.prototype.forEach.call($('rotation').children, function (el, j) {
@@ -961,25 +1127,88 @@ function showScene(i, opts) {
   if (!state.paused) rotateTimer = setTimeout(function () { showScene(state.scene + 1); }, ROTATE_S * 1000);
 }
 
+// Members only: sign-in and the Goals and Board screens live in Dashboard/app/.
+// They use newer browser features than the TV's browser has, so the TV never loads them.
+let appLoading = false;
+function loadApp() {
+  if (TV || SAMPLE || appLoading) return;
+  appLoading = true;
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'app/app.css';
+  document.head.appendChild(css);
+  const add = function (src, type, next) {
+    const el = document.createElement('script');
+    el.src = src;
+    if (type) el.type = type;
+    el.onload = next || null;
+    el.onerror = function () { appLoading = false; };
+    document.body.appendChild(el);
+  };
+  add('app/vendor/supabase.js', '', function () { add('app/vendor/sortable.min.js', '', function () { add('app/app.js', 'module'); }); });
+}
+
 function sceneFrom(value) {
-  const id = String(value || '').replace('#', '');
+  const id = String(value || '').replace('#', '').split('/')[0];
   for (let i = 0; i < SCENES.length; i++) if (SCENES[i].id === id) return i;
   return 0;
 }
 
 function setUpMembers() {
   const tabs = $('tabs');
-  tabs.innerHTML = SCENES.map(function (s) { return '<button class="tab" role="tab" id="tab-' + s.id + '" aria-controls="scene-' + s.id + '" type="button">' + esc(s.label) + '</button>'; }).join('');
-  SCENES.forEach(function (s, i) { $('tab-' + s.id).addEventListener('click', function () { showScene(i, { fromUser: true }); }); });
+  const tabbed = SCENES.filter(function (s) { return !s.noTab; });
+  const go = function (id) { showScene(sceneFrom(id), { fromUser: true }); };
+  // Desktop: one tab per screen.
+  tabs.innerHTML = tabbed.map(function (s) {
+    return '<button class="tab' + (s.locked ? ' needs-recruit' : '') + '" role="tab" id="tab-' + s.id + '" aria-controls="scene-' + s.id + '" type="button">' + esc(s.label) + '</button>';
+  }).join('');
+  tabbed.forEach(function (s) { $('tab-' + s.id).addEventListener('click', function () { go(s.id); }); });
   tabs.addEventListener('keydown', function (e) {
-    const moves = { ArrowRight: 1, ArrowLeft: -1, Home: -state.scene, End: SCENES.length - 1 - state.scene };
-    if (!(e.key in moves)) return;
+    const at = tabbed.indexOf(SCENES[state.scene]);
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabbed.length - 1 }[e.key];
+    if (to == null || at < 0) return;
     e.preventDefault();
-    showScene(state.scene + moves[e.key], { fromUser: true });
-    $('tab-' + SCENES[state.scene].id).focus();
+    const next = tabbed[(to + tabbed.length) % tabbed.length];
+    go(next.id);
+    $('tab-' + next.id).focus();
   });
+  // Phone: three tabs; each opens the screen you last had open in it.
+  $('gtabs').innerHTML = GROUPS.map(function (g) {
+    return '<button class="gtab' + (g.locked ? ' needs-recruit' : '') + '" role="tab" id="gtab-' + g.id + '" type="button"><svg viewBox="0 0 24 24" aria-hidden="true">' + g.icon + '</svg>' + esc(g.label) + '</button>';
+  }).join('');
+  GROUPS.forEach(function (g) {
+    $('gtab-' + g.id).addEventListener('click', function () {
+      const first = SCENES.filter(function (s) { return s.group === g.id; })[0].id;
+      go(g.stack ? first : lastInGroup[g.id] || first);
+    });
+  });
+  $('subtabs').addEventListener('click', function (e) {
+    const b = e.target.closest ? e.target.closest('[data-scene]') : null;
+    if (b) go(b.getAttribute('data-scene'));
+  });
+  // Tap (or Enter / Space on) a calendar event to see its details.
+  const eventFrom = function (target) {
+    const el = target.closest ? target.closest('#scene-week [data-ev]') : null;
+    return el ? { el: el, event: weekEvents[Number(el.getAttribute('data-ev'))] } : null;
+  };
+  $('scene-week').addEventListener('click', function (ev) {
+    const hit = eventFrom(ev.target);
+    if (hit && hit.event) openEvent(hit.event, hit.el);
+  });
+  addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') return closeEvent();
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    const hit = eventFrom(ev.target);
+    if (hit && hit.event && ev.target === hit.el) { ev.preventDefault(); openEvent(hit.event, hit.el); }
+  });
+  // Turning the phone, or resizing the window across the phone width, regroups the screens.
+  if (window.matchMedia) {
+    const mq = matchMedia('(max-width: 700px)');
+    const regroup = function () { showScene(state.scene); };
+    if (mq.addEventListener) mq.addEventListener('change', regroup); else if (mq.addListener) mq.addListener(regroup);
+  }
   addEventListener('hashchange', function () { showScene(sceneFrom(location.hash)); });
-  setInterval(function () { renderNextUp(Date.now()); }, 30e3);
+  setInterval(function () { renderNextUp(Date.now()); $('updated').textContent = updatedText(state.data, Date.now()); }, 30e3);
   showScene(params.has('scene') ? sceneFrom(params.get('scene')) : sceneFrom(location.hash));
 }
 
@@ -1122,8 +1351,20 @@ function sampleData(now) {
 
 // ---------- Start ----------
 
+// What Dashboard/app/ needs from this page.
+window.DASH = {
+  config: CONFIG,
+  icons: ICONS,
+  meter: meter,
+  data: function () { return state.data; },
+  scene: function () { return SCENES[state.scene].id; },
+  show: function (id) { showScene(sceneFrom(id), { fromUser: true }); },
+  setRecruit: function (on) { document.documentElement.classList.toggle('can-recruit', Boolean(on)); },
+};
+
 if (TV) setUpTv(); else setUpMembers();
 refresh();
+if (!TV && !SAMPLE) setTimeout(loadApp, 400); // so the account button shows on every tab
 addEventListener('online', function () { refresh(); });
 document.addEventListener('visibilitychange', function () {
   if (!document.hidden && Date.now() - state.lastAttempt > 60e3) refresh();

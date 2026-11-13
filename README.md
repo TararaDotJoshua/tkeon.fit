@@ -123,6 +123,55 @@ Run `npm run shots` after every page change and look at the images. The TV
 screens must fit 1920×1080 with nothing cut off, and the members' view must have
 no horizontal scroll at 390 px.
 
+### Goals and the task board (members' view)
+
+Two more tabs, Goals and Board, plus sign-in. The TV never loads them.
+
+| Path | What it is |
+| --- | --- |
+| `Dashboard/app/` | The sign-in, Goals, Board and admin screens. `vendor/` holds the Supabase client and SortableJS (drag and drop), pinned copies. |
+| `Dashboard/manifest.webmanifest`, `Dashboard/icons/` | Makes the dashboard installable as a home-screen app. |
+| `supabase/app.sql` | Accounts, profiles, goals, board tables and their access rules. Run after `schema.sql`. |
+| `sync/access-check.mjs` | 135 checks of what a visitor, a member and an admin can and can't do. Local database only. |
+| `sync/app-check.mjs` | 90 browser checks of the app itself: sign-up, goals, the board, drag, admin screens, the interest form and Recruitment. Local only. |
+
+- **Sign-in** is FIT email (`@fit.edu` or `@my.fit.edu`) plus scroll number. Anyone
+  can view; only signed-in members can change things; admins set positions.
+- **The digital scroll** lives in the private table `private.scroll` (number, name).
+  It must never be committed: this repo is public. Admin emails go in
+  `private.settings` under `admin_emails` (comma-separated, lower case).
+- **This sign-in is light on purpose.** Scroll numbers aren't secret, so it keeps
+  out strangers, not a determined brother. Nothing is deleted (only archived),
+  every change is logged with who made it, and admins can reset any account.
+- **Supabase settings it needs:** email sign-ups on, "Confirm email" off, and
+  minimum password length 6.
+
+### Recruitment (members with access only)
+
+A Recruitment tab for the rush team, and a public interest form at
+[tkeon.fit/Interest](https://tkeon.fit/Interest).
+
+| Path | What it is |
+| --- | --- |
+| `Interest/index.html` | The public interest form. Answers land in Recruitment as "Interested" in the current semester. |
+| `Dashboard/app/recruit.js` | The Recruitment tab: people, pipeline, numbers, PNM profiles, contact log, the form's QR code. |
+| `supabase/recruit.sql` | PNM tables, the recruitment access switch, the form's one narrow entry point, private photo storage, and the one-year deletion. Run after `app.sql`. |
+| `sync/lib/retention.mjs` | Run by the hourly sync: deletes PNM records over a year old and the photos they leave behind. |
+
+- **Access:** off for every brother until an admin turns on "Recruitment access" in
+  Settings → Manage chapter → Members. Admins always have it. The database
+  refuses everyone else; hiding the tab is only a convenience.
+- **Private data:** PNM answers (including the 900 number and food allergies) and
+  photos are readable only by brothers with access. Photos sit in a private
+  bucket and are shown through links that expire after an hour.
+- **Deletion:** a PNM record, its history and its photo are deleted one year after
+  it was entered. Editing a record doesn't reset that clock.
+- **Semesters:** January to May is spring, June to December is fall. A PNM can be
+  moved to another semester from his profile.
+- **The form** checks for an FIT email and a 9-digit 900 number, stops double
+  submissions, ignores bots that fill a hidden field, and accepts at most 60
+  submissions an hour.
+
 ### Things to know
 
 - **This repo is public.** Anyone signed in to GitHub can read the Actions logs

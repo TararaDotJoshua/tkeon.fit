@@ -4,7 +4,7 @@
 //
 //   node sync.mjs                    full run (GitHub Actions)
 //   node sync.mjs --dry-run          parse and print, write nothing
-//   node sync.mjs --only=calendar    or --only=tke, --only=rankings
+//   node sync.mjs --only=calendar    or --only=tke, --only=rankings, --only=retention
 //   node sync.mjs --ics=file.ics     read a local calendar instead of GCAL_ICS_URL
 //   node sync.mjs --tke-html=f.html  parse a saved KRA page instead of logging in
 //   node sync.mjs --rankings-html=f  parse a saved rankings page instead of fetching it
@@ -20,6 +20,7 @@ import { calendarRows, fetchIcs } from './lib/calendar.mjs';
 import { parseKraTables } from './lib/kra.mjs';
 import { scrapeTke, scrapeFile, scrubSession, StopError } from './lib/tke.mjs';
 import { parseRankings, fetchRankingsHtml, RANKINGS_URL } from './lib/rankings.mjs';
+import { pnmRetention } from './lib/retention.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CHAPTER_TZ = 'America/New_York';
@@ -40,6 +41,7 @@ const dryRun = args['dry-run'];
 const doCalendar = !args.only || args.only === 'calendar';
 const doTke = !args.only || args.only === 'tke';
 const doRankings = !args.only || args.only === 'rankings';
+const doRetention = !args.only || args.only === 'retention';
 
 // Never let a secret reach the database or the log, even inside an error message.
 const SECRETS = [env.SUPABASE_SERVICE_ROLE_KEY, env.GCAL_ICS_URL, env.TKE_USERNAME, env.TKE_PASSWORD].filter((s) => s && s.length >= 4);
@@ -187,6 +189,14 @@ async function main() {
     try { done.push(await syncRankings(sb)); } catch (e) {
       done.push(`rankings not updated (${e.message})`);
       console.log(`::warning::Rankings not updated: ${redact(e.message)}`);
+    }
+  }
+
+  // Recruitment: delete PNM records (and their photos) a year after they were entered.
+  if (doRetention && sb) {
+    try { done.push(await pnmRetention(sb)); } catch (e) {
+      done.push(`PNM clean-up didn't finish (${e.message})`);
+      console.log(`::warning::PNM clean-up didn't finish: ${redact(e.message)}`);
     }
   }
 
