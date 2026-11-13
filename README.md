@@ -10,6 +10,13 @@ The site is a static HTML deployment hosted with GitHub Pages at
 
 [tkeon.fit/Dashboard](https://tkeon.fit/Dashboard) shows how the chapter is doing
 on nationals' Key Result Areas (KRAs) and what's on the calendar for the next 7 days.
+It also shows the chapter's national and regional KRA rank.
+
+The design follows TKE's brand guide: TKE cherry `#AD2624`, TKE gray `#919194`,
+black and white, Lato type, and the houseplate logo (black on white for members,
+white on solid black for the TV). The members' view is light, like the main site;
+the TV view is dark. The page avoids newer browser features so it also runs in a
+smart TV's own browser.
 
 - Members: `tkeon.fit/Dashboard`, a tabbed view that works on phones.
 - Chapter-room TV: `tkeon.fit/Dashboard/?tv`, which rotates screens every 30 s.
@@ -70,7 +77,7 @@ or URLs without the login secrets) still fails, so mistakes show up.
    the cumulative KRAs (Initiates, Philanthropy, Service, St. Jude Dollars) to
    TKE's KRA year, June 1 to May 31; each June, bump the years and run it again.
    The sync never touches `term_start`, `due_date` or `note`, so hand edits
-   stick. A `note` shows on the KRA card (on the TV only when there's room).
+   stick. A `note` shows under the KRA's name (on the TV only when there's room).
 
 If the TKE site asks for a CAPTCHA or a verification code, the sync stops and
 the dashboard shows "The last sync failed". It never tries to get around either.
