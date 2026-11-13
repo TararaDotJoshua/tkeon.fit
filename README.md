@@ -27,6 +27,7 @@ from Supabase. Until Supabase is set up, the page shows sample data.
 | `supabase/schema.sql` | Tables and read-only policies. Run once in the Supabase SQL editor. |
 | `supabase/pace.sql` | Sets the KRA year dates for the pace markers. |
 | `sync/sync.mjs` | The hourly job: calendar + TKE KRA page → Supabase. |
+| `sync/lib/rankings.mjs` | Reads the chapter's national and regional KRA rank from tke.org's public [chapter rankings](https://tke.org/about-us/tke-today/chapter-rankings/) page. No login needed. If that page changes, the run logs a warning and keeps the last ranks. |
 | `sync/tke.config.json` | TKE login URL, KRA page URL and login field selectors. |
 | `sync/check-rls.mjs` | Confirms the anon key can read but not write. |
 | `sync/screenshots.mjs` | Screenshots every screen at TV size and 390 px, and checks the layout rules. |

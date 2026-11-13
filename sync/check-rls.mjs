@@ -26,6 +26,7 @@ const writes = {
   events: { id: probe, title: probe, starts_at: new Date().toISOString(), ends_at: new Date().toISOString() },
   sync_runs: { ok: true, message: probe },
   kra_snapshots: { day: '2000-01-01', kra_id: probe },
+  rankings: { id: probe, national_rank: 1 },
 };
 
 let failed = false;

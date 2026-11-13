@@ -1,7 +1,9 @@
 {
-  "_help": "TKE member portal (my.tke.org). Sign in at loginUrl, then read the three KRA tables on kraUrl. Selectors match the login form as of Nov 2026 (comma = any of). Run the 'Dashboard sync' workflow by hand after changing this file.",
+  "_help": "TKE member portal (my.tke.org). Sign in at loginUrl, then read the three KRA tables on kraUrl. Selectors match the login form as of Nov 2026 (comma = any of). chapterName is how tke.org's public rankings page spells the chapter. Run the 'Dashboard sync' workflow by hand after changing this file.",
   "loginUrl": "https://my.tke.org/Login.aspx",
   "kraUrl": "https://my.tke.org/MyChapter/MyChapter.aspx",
+  "chapterName": "Omicron-Nu",
+  "rankingsUrl": "https://tke.org/about-us/tke-today/chapter-rankings/",
   "selectors": {
     "username": "#UserName, input[name=UserName]",
     "password": "#Password",

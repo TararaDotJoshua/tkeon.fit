@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// Hourly sync for tkeon.fit/Dashboard: Google Calendar + TKE KRA page -> Supabase.
+// Hourly sync for tkeon.fit/Dashboard: Google Calendar + TKE KRA page + TKE's
+// public chapter rankings -> Supabase.
 //
 //   node sync.mjs                    full run (GitHub Actions)
 //   node sync.mjs --dry-run          parse and print, write nothing
-//   node sync.mjs --only=calendar    or --only=tke
+//   node sync.mjs --only=calendar    or --only=tke, --only=rankings
 //   node sync.mjs --ics=file.ics     read a local calendar instead of GCAL_ICS_URL
 //   node sync.mjs --tke-html=f.html  parse a saved KRA page instead of logging in
+//   node sync.mjs --rankings-html=f  parse a saved rankings page instead of fetching it
 //
 // Env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, GCAL_ICS_URL, TKE_USERNAME, TKE_PASSWORD
 
@@ -17,6 +19,7 @@ import { createClient } from '@supabase/supabase-js';
 import { calendarRows, fetchIcs } from './lib/calendar.mjs';
 import { parseKraTables } from './lib/kra.mjs';
 import { scrapeTke, scrapeFile, scrubSession, StopError } from './lib/tke.mjs';
+import { parseRankings, fetchRankingsHtml, RANKINGS_URL } from './lib/rankings.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CHAPTER_TZ = 'America/New_York';
@@ -29,12 +32,14 @@ const { values: args } = parseArgs({
     only: { type: 'string' },
     ics: { type: 'string' },
     'tke-html': { type: 'string' },
+    'rankings-html': { type: 'string' },
   },
 });
 const env = process.env;
 const dryRun = args['dry-run'];
 const doCalendar = !args.only || args.only === 'calendar';
 const doTke = !args.only || args.only === 'tke';
+const doRankings = !args.only || args.only === 'rankings';
 
 // Never let a secret reach the database or the log, even inside an error message.
 const SECRETS = [env.SUPABASE_SERVICE_ROLE_KEY, env.GCAL_ICS_URL, env.TKE_USERNAME, env.TKE_PASSWORD].filter((s) => s && s.length >= 4);
@@ -143,6 +148,20 @@ async function syncTke(sb) {
   return summary + (warnings.length ? ` (warning: ${warnings.join('; ')})` : '');
 }
 
+// --- Rankings ----------------------------------------------------------------
+
+async function syncRankings(sb) {
+  const config = JSON.parse(await readFile(path.join(HERE, 'tke.config.json'), 'utf8'));
+  if (!config.chapterName) return 'rankings not set up yet';
+  const html = args['rankings-html'] ? await readFile(args['rankings-html'], 'utf8') : await fetchRankingsHtml(config.rankingsUrl || RANKINGS_URL);
+  const r = parseRankings(html, config.chapterName);
+  const summary = `rank ${r.national_rank} of ${r.national_total} nationally, ${r.region_rank} of ${r.region_total} in region ${r.region}`;
+  log(`Rankings: ${summary} (score ${r.score_text}, since yesterday ${r.since_yesterday}, since last week ${r.since_week})`);
+  if (dryRun) return summary;
+  must(await sb.from('rankings').upsert({ id: 'kra', ...r, updated_at: new Date().toISOString() }, { onConflict: 'id' }), 'saving rankings');
+  return summary;
+}
+
 // --- Run -------------------------------------------------------------------
 
 async function main() {
@@ -158,6 +177,16 @@ async function main() {
     try { done.push(await syncTke(sb)); } catch (e) {
       stopped = e instanceof StopError;
       problems.push(`TKE: ${e.message}`);
+    }
+  }
+
+  // Rankings are an extra: if tke.org changes that page, say so in the log and
+  // the run message, but don't flag the whole sync (and the TV) as failed. The
+  // page shows the date of the rankings it has once they are over a day old.
+  if (doRankings) {
+    try { done.push(await syncRankings(sb)); } catch (e) {
+      done.push(`rankings not updated (${e.message})`);
+      console.log(`::warning::Rankings not updated: ${redact(e.message)}`);
     }
   }
 
