@@ -3,254 +3,365 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Omicron Nu dashboard</title>
-<meta name="description" content="Key Result Areas and this week's events for the Omicron Nu Chapter of Tau Kappa Epsilon.">
+<title>Omicron-Nu dashboard</title>
+<meta name="description" content="Key Result Areas and this week's events for the Omicron-Nu Chapter of Tau Kappa Epsilon.">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#25272B">
+<meta name="theme-color" content="#AD2624">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap">
 <script>if (/[?&]tv(=|&|$)/.test(location.search)) document.documentElement.className = 'tv';</script>
 <style>
+  /* TKE brand standards (Official TKE Communication, Brand & Style Guide):
+     TKE cherry PMS 1805C #AD2624, TKE gray Cool Gray 9C #919194, black, white.
+     Type: Lato. Houseplate: black on white for members, white on solid black
+     for the TV (the same white file tkeon.fit's header uses); never gray.
+     Members' view is light, like tkeon.fit. The TV is dark: less glare in the
+     chapter room and less wear on a screen that stays on all day.
+     Written for older smart-TV browsers too: no flex gap, inset, clamp-only
+     sizes, optional chaining or other newer syntax. */
   :root {
-    --bg: #25272B;
-    --panel: #2D3035;
-    --panel-2: #353840;
-    --track: #3E424A;
-    --line: #42464E;
-    --text: #F3F3F4;
-    --muted: #A9ADB4;
-    --faint: #80858D;
-    --cherry: #B3203A;      /* TKE cherry: the only brand accent */
-    --met: #8CC08F;         /* met */
-    --behind: #E3A857;      /* behind / not met */
-    --none: #80858D;        /* not reported */
-    --radius: 0.5rem;
-    --font-num: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
-    --font-text: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    color-scheme: dark;
+    --cherry: #AD2624;
+    --tke-gray: #919194;
+    --bg: #F4F4F5;
+    --panel: #FFFFFF;
+    --panel-2: #F6F6F7;
+    --line: #E1E1E4;
+    --track: #E4E4E8;
+    --text: #131315;
+    --muted: #5A5A5E;
+    --faint: #747478;
+    --mark: #AD2624;         /* cherry, for the headline meter and trend line */
+    --met: #2F8F5B;          /* status colours always come with an icon and a label */
+    --behind: #C77A00;
+    --none: #9A9A9E;
+    --neutral: #4A4A4F;      /* points bars: plain ink, so status colour stays meaningful */
+    --head-bg: #FFFFFF;
+    --head-text: #131315;
+    --head-muted: #5A5A5E;
+    --radius: 0.75rem;
+    --font: "Lato", "Helvetica Neue", Arial, sans-serif;
+  }
+  html.tv {
+    --bg: #000000;         /* solid black: the only background the white houseplate may sit on */
+    --panel: #161618;
+    --panel-2: #1F1F22;
+    --line: #2C2C30;
+    --track: #303035;
+    --text: #F6F6F7;
+    --muted: #B7B7BB;
+    --faint: #919194;
+    --mark: #C9302C;         /* cherry, one step lighter so it holds 3:1 on black */
+    --met: #4DB37E;
+    --behind: #FFB20F;       /* TKE secondary gold, PMS 1235C */
+    --none: #6E6E73;
+    --neutral: #D5D5D8;
+    --head-bg: #000000;
+    --head-text: #FFFFFF;
+    --head-muted: #B7B7BB;
   }
   * { box-sizing: border-box; }
   [hidden] { display: none !important; }
   html { font-size: 16px; -webkit-text-size-adjust: 100%; }
-  /* TV: everything scales off the viewport so 1920x1080 is one fixed layout.
-     The vh term only bites on screens shorter than 16:9. */
-  html.tv { font-size: clamp(14px, min(1.05vw, 1.87vh), 40px); cursor: none; }
-  body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.4 var(--font-text); }
+  /* TV: every size scales off the screen, so 1080p and 4K are the same layout. */
+  html.tv { font-size: 1.0417vw; cursor: none; }
+  @supports (font-size: min(1vw, 1vh)) { html.tv { font-size: min(1.0417vw, 1.852vh); } }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 400 1rem/1.4 var(--font); }
   html.tv, html.tv body { height: 100%; overflow: hidden; }
-  h1, h2, h3 { font-family: var(--font-num); font-weight: 600; letter-spacing: 0.01em; margin: 0; }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2, h3 { font-weight: 700; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .eyebrow { color: var(--muted); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+  .panel { background: var(--panel); border-radius: var(--radius); border: 1px solid var(--line); min-width: 0; }
+  html.tv .panel { border-color: transparent; }
 
-  /* Status colours, used by pills, bars, dots and strip segments. */
-  .s-met { --sc: var(--met); }
-  .s-ontrack { --sc: var(--met); }
+  .s-met, .s-ontrack { --sc: var(--met); }
   .s-behind { --sc: var(--behind); }
   .s-none { --sc: var(--none); }
+  .ico { display: block; width: 1.5rem; height: 1.5rem; flex: none; }
 
-  /* ---------- Frame ---------- */
+  /* Meters. The fill grows in when a screen appears. */
+  .meter { position: relative; display: block; height: 0.6rem; }
+  .meter .track { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .fill { display: block; height: 100%; background: var(--sc); border-radius: 0 4px 4px 0; transform-origin: 0 50%; animation: grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  .tick { position: absolute; top: -0.25rem; bottom: -0.25rem; width: 3px; margin-left: -1.5px; background: var(--text); border-radius: 2px; box-shadow: 0 0 0 2px var(--panel); }
+  .tick-key { display: inline-block; width: 3px; height: 0.9em; margin-right: 0.55em; background: var(--text); border-radius: 2px; vertical-align: -0.1em; }
+  .pbar { display: block; height: 0.5rem; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .pbar .fill { background: var(--neutral); }
+  @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+  /* ---------- Header ---------- */
   #stage { min-height: 100%; }
-  html.tv #stage { height: 100%; display: flex; flex-direction: column; padding: 1.4rem 2.2rem 1.1rem; }
-  .top { display: flex; align-items: center; gap: 0.75rem 1.25rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  html.tv .top { padding: 0 0 1rem; flex-wrap: nowrap; }
-  .brand { display: flex; align-items: center; gap: 0.85rem; min-width: 0; flex: 1 1 auto; }
-  /* The houseplate file has clear space built in, so it's sized up and pulled in. */
-  .logo { display: block; height: 3.6rem; width: auto; flex: none; margin: -0.5rem -0.3rem -0.5rem -0.5rem; }
-  .logo-fallback { display: inline-flex; align-items: center; justify-content: center; flex: none; height: 2.6rem; padding: 0 0.55rem; border-radius: 0.25rem; background: var(--cherry); color: #fff; font: 700 1.45rem/1 var(--font-num); letter-spacing: 0.06em; }
-  .chapter { font-size: 1.5rem; line-height: 1.05; }
-  .updated { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.875rem; }
-  html.tv .logo { height: 5.2rem; margin: -0.9rem -0.3rem -0.9rem -0.7rem; }
-  html.tv .logo-fallback { height: 3.4rem; }
-  html.tv .logo-fallback { font-size: 1.9rem; padding: 0 0.7rem; }
-  html.tv .chapter { font-size: 2.3rem; }
-  html.tv .updated { font-size: 1.05rem; }
+  html.tv #stage { height: 100%; display: flex; flex-direction: column; padding: 1.3rem 2.4rem 1.1rem; }
+  .top { display: flex; align-items: center; background: var(--head-bg); color: var(--head-text); padding: 0.7rem 1rem; }
+  html.tv .top { padding: 0 0 1rem; background: none; border-bottom: 3px solid var(--cherry); flex: none; }
+  .brand { display: flex; align-items: center; min-width: 0; flex: 1 1 auto; }
+  /* Both files have clear space built in around the houseplate; keep it. */
+  .logo-wrap { display: block; flex: none; margin-right: 0.6rem; }
+  .logo { display: block; height: 3.4rem; width: 3.4rem; }
+  .logo-on-dark, html.tv .logo-on-light { display: none; }
+  html.tv .logo-on-dark { display: block; }
+  .chapter { font-size: 1.35rem; line-height: 1.1; font-weight: 900; }
+  .sub { color: var(--head-muted); font-size: 0.85rem; margin-top: 0.15rem; }
+  html.tv .logo { height: 5.6rem; width: 5.6rem; }
+  html.tv .logo-wrap { margin: -0.7rem 0.7rem -0.7rem -0.5rem; }
+  html.tv .chapter { font-size: 2.2rem; }
+  html.tv .sub { font-size: 1.05rem; }
 
   .clock { display: none; text-align: right; flex: none; }
   html.tv .clock { display: block; }
-  .clock-time { font: 600 2.7rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
-  .clock-date { color: var(--muted); font-size: 1.05rem; margin-top: 0.2rem; }
+  .clock-time { font-weight: 900; font-size: 2.7rem; line-height: 1; }
+  .clock-date { color: var(--head-muted); font-size: 1.05rem; margin-top: 0.25rem; }
 
-  .tabs { display: flex; gap: 0.25rem; flex: none; }
+  /* National and regional KRA rank: in the TV header, a bar under the tabs for members. */
+  .ranks { min-width: 0; }
+  .ranks:empty { display: none; }
+  .rk { display: flex; align-items: center; }
+  .rk-item { flex: none; margin-right: 1.5rem; }
+  .rk-label { display: block; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+  .rk-num { display: block; font-weight: 900; font-size: 1.6rem; line-height: 1.15; white-space: nowrap; }
+  .rk-num span { font-size: 0.55em; font-weight: 700; color: var(--muted); }
+  .rk-moves { color: var(--muted); font-size: 0.85rem; line-height: 1.45; white-space: nowrap; min-width: 0; }
+  .rk-move { display: block; }
+  .arrow { display: inline-block; width: 0.7em; height: 0.7em; margin-right: 0.4em; }
+  html:not(.tv) .ranks { max-width: 1180px; margin: 0.9rem auto 0; padding: 0 1rem; }
+  html:not(.tv) .rk { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.7rem 0.9rem; flex-wrap: wrap; }
+  @media (max-width: 560px) {
+    html:not(.tv) .rk-moves { flex-basis: 100%; margin-top: 0.45rem; white-space: normal; }
+    html:not(.tv) .rk-move { display: inline-block; margin-right: 1rem; }
+  }
+  html.tv .ranks { flex: none; margin: 0 2.2rem; }
+  html.tv .rk-item { margin-right: 2.4rem; }
+  html.tv .rk-label { font-size: 0.9rem; color: var(--head-muted); }
+  html.tv .rk-num { font-size: 2.6rem; }
+  html.tv .rk-moves { font-size: 1.1rem; color: var(--head-muted); }
+
+  /* Next event, with a countdown: at the top of the This week screen. */
+  .nextup { min-width: 0; }
+  .nextup:empty { display: none; }
+  .nu { display: flex; align-items: center; min-width: 0; }
+  .nu-label { flex: none; margin-right: 0.75rem; padding: 0.3rem 0.6rem; border-radius: 0.3rem; background: var(--cherry); color: #fff; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+  .nu-body { min-width: 0; }
+  .nu-title { display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nu-meta { display: block; color: var(--muted); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html:not(.tv) .nextup { flex-basis: 100%; margin-top: 0.8rem; }
+  html:not(.tv) .nu { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 0.65rem 0.8rem; }
+  html.tv .nextup { margin-left: auto; max-width: 46rem; }
+  html.tv .nu-label { font-size: 0.9rem; padding: 0.4rem 0.75rem; margin-right: 1rem; }
+  html.tv .nu-title { font-size: 1.5rem; line-height: 1.15; }
+  html.tv .nu-meta { font-size: 1.1rem; }
+
+  .tabs { display: flex; position: -webkit-sticky; position: sticky; top: 0; z-index: 5; background: var(--head-bg); border-bottom: 1px solid var(--line); padding: 0 0.5rem; }
   html.tv .tabs { display: none; }
-  .tab { appearance: none; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); cursor: pointer; font: 600 1.05rem/1 var(--font-num); letter-spacing: 0.02em; min-height: 44px; padding: 0.6rem 0.75rem 0.5rem; }
+  .tab { -webkit-appearance: none; appearance: none; flex: 1 1 0; max-width: 14rem; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); cursor: pointer; font: 700 0.95rem/1.1 var(--font); min-height: 44px; padding: 0.6rem 0.4rem 0.5rem; }
   .tab:hover { color: var(--text); }
   .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--cherry); }
-  .tab:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  .tab:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
 
-  .notices { display: flex; flex-direction: column; gap: 0.4rem; padding: 0 1rem; max-width: 1280px; margin: 0.75rem auto 0; }
+  .notices { max-width: 1180px; margin: 0 auto; padding: 0 1rem; }
   .notices:empty { display: none; }
-  html.tv .notices { padding: 0; max-width: none; margin: 0.9rem 0 0; }
-  .notice { background: var(--panel); border-left: 4px solid var(--faint); border-radius: 0.375rem; padding: 0.5rem 0.8rem; font-size: 0.9rem; overflow-wrap: anywhere; }
+  html.tv .notices { max-width: none; margin: 0; padding: 0; flex: none; }
+  .notice { margin-top: 0.75rem; background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--faint); border-radius: 0.4rem; padding: 0.5rem 0.8rem; font-size: 0.9rem; word-wrap: break-word; }
   .notice.warn { border-left-color: var(--behind); }
-  .notice.bad { border-left-color: var(--cherry); background: #3a2328; }
-  html.tv .notice { font-size: 1.05rem; padding: 0.45rem 0.9rem; }
+  .notice.bad { border-left-color: var(--cherry); }
+  html.tv .notice { font-size: 1.05rem; border-color: transparent; border-left: 4px solid var(--faint); }
+  html.tv .notice.warn { border-left-color: var(--behind); }
 
-  main { padding: 1rem; max-width: 1280px; margin: 0 auto; }
-  html.tv main { flex: 1; min-height: 0; position: relative; max-width: none; margin: 1rem 0 0; padding: 0; }
-  .scene { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
-  html.tv .scene { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; gap: 1.1rem; }
+  main { max-width: 1180px; margin: 0 auto; padding: 1rem; }
+  html.tv main { flex: 1 1 0; min-height: 0; position: relative; max-width: none; margin: 1.1rem 0 0; padding: 0; }
+  .scene { min-width: 0; }
+  html.tv .scene { position: absolute; left: 0; right: 0; top: 0; bottom: 0; opacity: 0; transition: opacity 0.6s ease; }
   html.tv .scene.is-active { opacity: 1; }
-  .empty { color: var(--muted); margin: 0; }
+  html.tv .scene:not(.is-active) .fill { animation: none; }
+  .empty { color: var(--muted); }
 
-  /* ---------- Screen 1: KRAs ---------- */
-  .kra-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.75rem 2rem; flex-wrap: wrap; }
-  .headline { font-size: 2rem; line-height: 1.05; }
-  .headline b { font-weight: 700; }
-  html.tv .headline { font-size: 3.4rem; }
-  .side { display: flex; align-items: flex-end; gap: 1.25rem 1.75rem; flex-wrap: wrap; }
-  .total-label { color: var(--muted); font-size: 0.8rem; }
-  .total-num { font: 600 1.6rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
-  html.tv .total-label { font-size: 1.05rem; }
-  html.tv .total-num { font-size: 2.4rem; }
-  .trend { width: 13rem; max-width: 100%; }
-  .trend svg { display: block; width: 100%; height: 2.6rem; overflow: visible; }
-  .trend-cap { display: flex; justify-content: space-between; gap: 0.5rem; color: var(--muted); font-size: 0.75rem; margin-top: 0.2rem; }
-  html.tv .trend { width: 17rem; }
-  html.tv .trend svg { height: 3rem; }
-  html.tv .trend-cap { font-size: 0.95rem; }
+  /* ---------- Screen 1: scoreboard ---------- */
+  .board { display: grid; grid-template-columns: minmax(0, 1fr); grid-gap: 1rem; }
+  @media (min-width: 900px) { html:not(.tv) .board { grid-template-columns: 21rem minmax(0, 1fr); align-items: start; } }
+  html.tv .board { height: 100%; grid-template-columns: 29rem minmax(0, 1fr); grid-gap: 1.4rem; }
+  .side { display: grid; grid-template-columns: minmax(0, 1fr); grid-gap: 1rem; min-width: 0; }
+  html.tv .side { grid-template-rows: auto auto minmax(0, 1fr); grid-gap: 1.1rem; min-height: 0; }
 
-  /* Name above the bar (bottom-aligned, wraps to 2 lines so 5-point KRAs stay
-     readable), points below it. */
-  .strip { display: flex; gap: 0.3rem; }
-  .seg { min-width: 0; display: flex; flex-direction: column; gap: 0.25rem; }
-  .seg-name { margin-top: auto; color: var(--muted); font: 500 0.8rem/1.1 var(--font-num); letter-spacing: 0.01em; overflow-wrap: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-  .seg-bar { display: block; height: 0.9rem; background: var(--track); border-radius: 2px; overflow: hidden; }
-  .seg-fill { display: block; height: 100%; background: var(--sc); }
-  .seg-pts { color: var(--text); font: 600 0.85rem/1 var(--font-num); white-space: nowrap; }
-  html.tv .strip { gap: 0.4rem; }
-  html.tv .seg-bar { height: 1.3rem; }
-  html.tv .seg-name { font-size: 1.05rem; }
-  html.tv .seg-pts { font-size: 1.15rem; }
-  @media (max-width: 640px) { html:not(.tv) .seg-name, html:not(.tv) .seg-pts { display: none; } }
+  .hero { padding: 1.1rem 1.2rem 1.2rem; }
+  .hero-num { font-weight: 900; font-size: 4.4rem; line-height: 1; margin: 0.35rem 0 0.9rem; letter-spacing: -0.01em; }
+  .hero-num span { font-size: 0.45em; font-weight: 700; color: var(--muted); margin-left: 0.1em; }
+  .hero .meter { height: 1rem; }
+  .hero .fill { background: var(--mark); }
+  .hero-cap { display: flex; justify-content: space-between; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; margin-top: 0.8rem; }
+  .hero-cap span { margin-right: 0.75rem; }
+  .hero-cap span:last-child { margin-right: 0; }
+  html.tv .hero { padding: 1.3rem 1.5rem 1.4rem; }
+  html.tv .eyebrow { font-size: 0.95rem; }
+  html.tv .hero-num { font-size: 6.6rem; margin: 0.4rem 0 1.1rem; }
+  html.tv .hero .meter { height: 1.3rem; }
+  html.tv .hero-cap { font-size: 1.1rem; margin-top: 0.95rem; }
 
-  .kra-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); }
-  html.tv .kra-grid { flex: 1; min-height: 0; gap: 1rem; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); }
-  .card { background: var(--panel); border-radius: var(--radius); padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; overflow: hidden; }
-  .card > * { flex-shrink: 0; }
-  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
-  .card-name { font-size: 1.2rem; line-height: 1.1; overflow-wrap: anywhere; }
-  .pill { flex: none; border: 1px solid var(--sc); border-radius: 999px; color: var(--sc); font: 600 0.8rem/1 var(--font-text); padding: 0.28rem 0.55rem; white-space: nowrap; }
-  .s-met .pill { background: var(--met); color: #1E2A1F; }
-  .card-vals { display: flex; align-items: baseline; gap: 0.15rem 0.45rem; flex-wrap: wrap; }
-  .v-cur { font: 700 2.1rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
-  .v-cur.is-text { font-size: 1.5rem; font-weight: 600; color: var(--muted); }
-  .v-goal { color: var(--muted); font-size: 0.95rem; }
-  .bar { position: relative; height: 0.5rem; background: var(--track); border-radius: 999px; }
-  .bar-fill { position: absolute; inset: 0 auto 0 0; background: var(--sc); border-radius: 999px; }
-  .pace { position: absolute; top: -0.3rem; bottom: -0.3rem; width: 2px; margin-left: -1px; background: var(--text); }
-  .card-foot { display: flex; align-items: center; gap: 0.4rem 0.9rem; flex-wrap: wrap; margin-top: auto; color: var(--muted); font-size: 0.9rem; }
-  .card-foot b { color: var(--text); font: 600 1.15rem/1 var(--font-num); }
-  .spark { display: block; width: 5.5rem; height: 1.5rem; margin-left: auto; overflow: visible; }
-  .note { margin: 0; color: var(--muted); font-size: 0.85rem; }
-  html.tv .card { padding: 0.95rem 1.2rem; gap: 0.5rem; }
-  html.tv .card-name { font-size: 1.5rem; }
-  html.tv .pill { font-size: 0.95rem; padding: 0.32rem 0.65rem; }
-  html.tv .v-cur { font-size: 2.8rem; }
-  html.tv .v-cur.is-text { font-size: 2rem; }
-  html.tv .v-goal { font-size: 1.2rem; }
-  html.tv .bar { height: 0.7rem; }
-  html.tv .card-foot { font-size: 1.1rem; }
-  html.tv .card-foot b { font-size: 1.45rem; }
-  html.tv .spark { width: 7.5rem; height: 1.7rem; }
-  html.tv .note { font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  /* Fallbacks when a screen would overflow (extra notices, more KRAs, small TVs). */
-  html.tv .dense .card { padding: 0.7rem 1rem; gap: 0.35rem; }
-  html.tv .dense .v-cur { font-size: 2.4rem; }
-  html.tv .dense .spark { height: 1.4rem; }
-  html.tv .dense .headline { font-size: 2.8rem; }
-  html.tv .denser .note { display: none; }
-  html.tv .denser .v-cur { font-size: 2.1rem; }
-  html.tv .denser .card-name { font-size: 1.35rem; }
-  /* Last resort: keep the strip's names (the cards repeat its points). */
-  html.tv .densest .trend, html.tv .densest .spark, html.tv .densest .seg-pts, html.tv .densest .card-foot > span + span { display: none; }
-  html.tv .densest .seg-name { font-size: 0.95rem; }
-  html.tv .densest .seg-bar { height: 1rem; }
-  html.tv .densest .card { padding: 0.55rem 0.9rem; gap: 0.25rem; }
-  html.tv .densest .v-cur { font-size: 1.85rem; }
-  html.tv .densest .headline { font-size: 2.4rem; }
-  html.tv .densest .kra-grid { gap: 0.7rem; }
+  .tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-gap: 0.6rem; }
+  .tile { padding: 0.75rem 0.8rem 0.8rem; }
+  .tile-num { font-weight: 900; font-size: 1.5rem; line-height: 1.1; margin: 0.2rem 0 0.5rem; white-space: nowrap; }
+  .tile-num span { font-size: 0.6em; font-weight: 700; color: var(--muted); }
+  .tile-cap { color: var(--muted); font-size: 0.8rem; margin-top: 0.45rem; }
+  html.tv .tiles { grid-gap: 1.1rem; }
+  html.tv .tile { padding: 1rem 1.1rem; }
+  html.tv .tile-num { font-size: 2.1rem; }
+  html.tv .tile-cap { font-size: 1rem; }
+  html.tv .tile .pbar { height: 0.6rem; }
 
-  /* ---------- Screen 2: Required & bonus ---------- */
-  .lists { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); align-items: start; }
-  html.tv .lists { flex: 1; min-height: 0; grid-template-columns: 1fr 1fr; gap: 1.75rem; align-items: stretch; }
-  .list-block { background: var(--panel); border-radius: var(--radius); padding: 1rem 1.1rem; min-width: 0; overflow: hidden; }
-  .list-head { display: flex; align-items: baseline; gap: 0.25rem 0.9rem; flex-wrap: wrap; padding-bottom: 0.65rem; border-bottom: 1px solid var(--line); }
-  .list-head h2 { font-size: 1.6rem; margin-right: auto; }
-  .list-total { font: 600 1.6rem/1 var(--font-num); }
-  .list-total span, .list-count { color: var(--muted); font-family: var(--font-text); font-size: 0.9rem; font-weight: 400; }
-  .items { list-style: none; margin: 0; padding: 0; }
-  .item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 0.2rem 0.8rem; padding: 0.7rem 0; border-bottom: 1px solid var(--line); }
-  .item:last-child { border-bottom: 0; }
-  .dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; background: var(--sc); }
-  .item-name { font-weight: 500; overflow-wrap: anywhere; line-height: 1.25; }
-  .item-note { display: block; color: var(--muted); font-size: 0.85rem; font-weight: 400; }
-  .item-val { color: var(--muted); text-align: right; white-space: nowrap; }
-  .item-val.is-flag { color: var(--sc); }
-  .item-pts { font: 600 1.15rem/1 var(--font-num); min-width: 3rem; text-align: right; white-space: nowrap; }
-  @media (max-width: 480px) {
-    html:not(.tv) .item { grid-template-columns: auto minmax(0, 1fr) auto; }
-    html:not(.tv) .item-val { grid-column: 2; grid-row: 2; text-align: left; white-space: normal; }
-    html:not(.tv) .item-pts { grid-column: 3; grid-row: 1; }
+  .trend { padding: 1rem 1.2rem 0.9rem; display: flex; flex-direction: column; min-height: 0; }
+  .trend-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .trend-empty { color: var(--muted); font-size: 0.9rem; margin-top: 0.5rem; }
+  .chart { margin-top: 1.6rem; flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .plot { position: relative; height: 8.5rem; flex: 1 1 auto; min-height: 5rem; touch-action: pan-y; }
+  .plot svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+  .plot .grid { stroke: var(--line); stroke-width: 1; }
+  .plot .line { fill: none; stroke: var(--mark); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .plot .area { fill: var(--mark); fill-opacity: 0.12; }
+  .ylab { position: absolute; left: 0; color: var(--faint); font-size: 0.75rem; line-height: 1; transform: translateY(-115%); }
+  .dot { position: absolute; width: 0.65rem; height: 0.65rem; margin: -0.325rem 0 0 -0.325rem; border-radius: 50%; background: var(--mark); box-shadow: 0 0 0 2px var(--panel); }
+  .endlab { position: absolute; right: 0; font-weight: 700; font-size: 0.9rem; line-height: 1; transform: translateY(-190%); }
+  .cross { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--faint); }
+  .tip { position: absolute; top: 0; padding: 0.25rem 0.5rem; border-radius: 0.3rem; background: var(--text); color: var(--panel); font-size: 0.8rem; white-space: nowrap; pointer-events: none; }
+  .xaxis { display: flex; justify-content: space-between; color: var(--faint); font-size: 0.75rem; margin-top: 0.35rem; }
+  html.tv .trend { padding: 1.2rem 1.5rem 1.1rem; }
+  html.tv .trend-empty { font-size: 1.1rem; }
+  html.tv .ylab, html.tv .xaxis { font-size: 0.95rem; }
+  html.tv .endlab { font-size: 1.15rem; }
+  html.tv .plot .line { stroke-width: 3; }
+
+  .ktable { padding: 0.4rem 1.1rem 0.5rem; }
+  html.tv .ktable { display: flex; flex-direction: column; min-height: 0; padding: 0.7rem 1.5rem 0.6rem; }
+  .khead, .krow { display: grid; grid-template-columns: 1.5rem minmax(0, 1.25fr) minmax(0, 1.5fr) minmax(0, 1fr); grid-column-gap: 1rem; align-items: center; }
+  .khead { color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+  .khead .key { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 0.6rem; white-space: nowrap; }
+  .krow { padding: 0.8rem 0; border-bottom: 1px solid var(--line); min-height: 0; }
+  .krow:last-child { border-bottom: 0; }
+  .k-title { display: block; font-weight: 700; font-size: 1.05rem; line-height: 1.2; word-wrap: break-word; }
+  .k-status { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 0.1rem; }
+  .k-note { display: block; color: var(--faint); font-size: 0.8rem; }
+  .k-val { margin-bottom: 0.4rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .k-val b { font-weight: 900; font-size: 1.35rem; }
+  .k-val b.is-text { font-weight: 700; font-size: 1.05rem; color: var(--muted); }
+  .k-val span { color: var(--muted); font-size: 0.9rem; }
+  .k-ptsnum { margin-bottom: 0.4rem; line-height: 1.15; white-space: nowrap; }
+  .k-ptsnum b { font-weight: 900; font-size: 1.35rem; }
+  .k-ptsnum span { color: var(--muted); font-size: 0.9rem; }
+  @media (max-width: 700px) {
+    html:not(.tv) .khead { display: none; }
+    html:not(.tv) .krow { grid-template-columns: 1.5rem minmax(0, 1fr) auto; grid-row-gap: 0.6rem; align-items: start; }
+    html:not(.tv) .k-prog { grid-column: 1 / -1; grid-row: 2; }
+    html:not(.tv) .k-pts { grid-column: 3; grid-row: 1; text-align: right; }
+    html:not(.tv) .k-pts .pbar { display: none; }
+    html:not(.tv) .k-ptsnum { margin: 0; }
+    html:not(.tv) .k-ptsnum b { font-size: 1.15rem; }
+    html:not(.tv) .ktable { padding: 0.2rem 0.9rem; }
+    html:not(.tv) .hero-num { font-size: 3.8rem; }
   }
-  html.tv .list-block { padding: 1.2rem 1.5rem; }
-  html.tv .list-head h2, html.tv .list-total { font-size: 2.3rem; }
-  html.tv .list-total span, html.tv .list-count { font-size: 1.15rem; }
-  html.tv .item { font-size: 1.35rem; padding: 0.85rem 0; gap: 0.2rem 1.1rem; }
-  html.tv .item-note { font-size: 1rem; }
-  html.tv .dot { width: 1rem; height: 1rem; }
-  html.tv .item-pts { font-size: 1.7rem; min-width: 4rem; }
-  html.tv .dense .item { padding: 0.55rem 0; font-size: 1.2rem; }
-  html.tv .denser .item { padding: 0.35rem 0; font-size: 1.05rem; }
-  html.tv .denser .item-note { display: none; }
+  html.tv .khead, html.tv .krow { grid-template-columns: 2.1rem minmax(0, 1.3fr) minmax(0, 1.5fr) minmax(0, 1fr); grid-column-gap: 1.4rem; }
+  html.tv .khead { font-size: 0.9rem; padding: 0.5rem 0 0.7rem; flex: none; }
+  html.tv .krows { flex: 1 1 0; min-height: 0; display: grid; grid-auto-rows: minmax(0, 1fr); }
+  html.tv .krow { padding: 0; overflow: hidden; }
+  html.tv .ico { width: 2.1rem; height: 2.1rem; }
+  html.tv .k-title { font-size: 1.55rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html.tv .k-status { font-size: 1.05rem; }
+  html.tv .k-note { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html.tv .k-val b, html.tv .k-ptsnum b { font-size: 1.9rem; }
+  html.tv .k-val b.is-text { font-size: 1.4rem; }
+  html.tv .k-val span, html.tv .k-ptsnum span { font-size: 1.15rem; }
+  html.tv .k-val, html.tv .k-ptsnum { margin-bottom: 0.45rem; }
+  html.tv .meter { height: 0.75rem; }
+  html.tv .pbar { height: 0.6rem; }
+  /* When rows get short (extra notices, more KRAs): drop notes, then status lines. */
+  html.tv .tight .hero { padding: 1rem 1.5rem 1.1rem; }
+  html.tv .tight .hero-num { font-size: 5.2rem; margin: 0.2rem 0 0.8rem; }
+  html.tv .tight .tile { padding: 0.75rem 1.1rem; }
+  html.tv .tight .trend { padding: 0.9rem 1.5rem 0.8rem; }
+  html.tv .tight .chart { margin-top: 1.2rem; }
+  html.tv .tight .plot { min-height: 3rem; }
+  html.tv .tighter .trend { display: none; }
+  html.tv .tight .k-note { display: none; }
+  html.tv .tighter .k-status { display: none; }
+  html.tv .tighter .k-val b, html.tv .tighter .k-ptsnum b { font-size: 1.5rem; }
+  html.tv .tighter .k-title { font-size: 1.35rem; }
+  html.tv .tighter .k-val, html.tv .tighter .k-ptsnum { margin-bottom: 0.25rem; }
 
-  /* ---------- Screen 3: This week ---------- */
-  .week-head { display: flex; align-items: baseline; gap: 0.4rem 1rem; flex-wrap: wrap; }
-  .week-head h2 { font-size: 2rem; }
+  /* ---------- Screen 2: required & bonus ---------- */
+  .lists { display: grid; grid-gap: 1rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  @media (min-width: 900px) { html:not(.tv) .lists { grid-template-columns: 1fr 1fr; } }
+  html.tv .lists { height: 100%; grid-template-columns: 1fr 1fr; grid-gap: 1.4rem; align-items: stretch; }
+  .list-block { padding: 1rem 1.1rem 0.4rem; overflow: hidden; }
+  .list-head { padding-bottom: 0.9rem; border-bottom: 1px solid var(--line); }
+  .list-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 0.6rem; }
+  .list-top h2 { font-size: 1.4rem; font-weight: 900; }
+  .list-total { font-weight: 900; font-size: 1.4rem; white-space: nowrap; }
+  .list-total span { color: var(--muted); font-size: 0.65em; font-weight: 700; }
+  .list-count { color: var(--muted); font-size: 0.85rem; margin-top: 0.45rem; }
+  .items { list-style: none; margin: 0; padding: 0; }
+  .item { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr) auto; grid-column-gap: 0.8rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--line); }
+  .item:last-child { border-bottom: 0; }
+  .item-name { font-weight: 700; line-height: 1.25; word-wrap: break-word; }
+  .item-val { display: block; color: var(--muted); font-size: 0.85rem; font-weight: 400; }
+  .item-pts { font-weight: 900; font-size: 1.15rem; white-space: nowrap; }
+  .item-pts span { color: var(--muted); font-size: 0.75em; font-weight: 700; }
+  html.tv .list-block { padding: 1.3rem 1.6rem 0.6rem; }
+  html.tv .list-top h2, html.tv .list-total { font-size: 2.3rem; }
+  html.tv .list-count { font-size: 1.1rem; }
+  html.tv .item { grid-template-columns: 2.1rem minmax(0, 1fr) auto; grid-column-gap: 1.2rem; padding: 0.95rem 0; }
+  html.tv .item-name { font-size: 1.55rem; }
+  html.tv .item-val { font-size: 1.1rem; }
+  html.tv .item-pts { font-size: 1.9rem; }
+  html.tv .tight .item { padding: 0.6rem 0; }
+  html.tv .tighter .item { padding: 0.35rem 0; }
+  html.tv .tighter .item-name { font-size: 1.3rem; }
+
+  /* ---------- Screen 3: this week ---------- */
+  html.tv #scene-week { display: flex; flex-direction: column; }
+  .week-head { display: flex; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.9rem; }
+  .week-head h2 { font-size: 1.6rem; font-weight: 900; margin-right: 0.8rem; }
   .range { color: var(--muted); }
-  html.tv .week-head h2 { font-size: 3rem; }
-  html.tv .range { font-size: 1.4rem; }
-  .week { display: grid; gap: 0.6rem; grid-template-columns: minmax(0, 1fr); }
+  html.tv .week-head { flex: none; margin-bottom: 1rem; align-items: center; flex-wrap: nowrap; }
+  html.tv .week-head h2 { font-size: 2.6rem; margin-right: 1.2rem; }
+  html.tv .range { font-size: 1.35rem; white-space: nowrap; margin-right: 2rem; }
+  .week { display: grid; grid-gap: 0.6rem; grid-template-columns: minmax(0, 1fr); }
   @media (min-width: 960px) { html:not(.tv) .week { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
-  html.tv .week { flex: 1; min-height: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.8rem; }
-  .day { background: var(--panel); border-radius: var(--radius); padding: 0.75rem 0.8rem; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 0.55rem; }
-  .day.is-today { box-shadow: inset 0 3px 0 var(--cherry); }
-  .day-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
-  .dow { font: 600 1.2rem/1 var(--font-num); }
-  .date { color: var(--muted); font-size: 0.9rem; }
-  .evs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; min-height: 0; }
-  html.tv .evs { flex: 1; overflow: hidden; }
-  .ev { border-left: 3px solid var(--line); padding: 0.05rem 0 0.05rem 0.55rem; min-width: 0; }
-  .ev-allday { border-left-color: var(--cherry); background: var(--panel-2); border-radius: 0 0.25rem 0.25rem 0; padding: 0.3rem 0.55rem; }
-  .ev-time { display: block; color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-  .ev-title { display: block; font-weight: 600; line-height: 1.2; overflow-wrap: anywhere; }
-  .ev-loc { display: block; color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
-  .more, .empty-day { margin: 0; color: var(--faint); font-size: 0.9rem; }
-  html.tv .day { padding: 1rem 0.95rem; gap: 0.8rem; }
-  html.tv .dow { font-size: 1.65rem; }
-  html.tv .date { font-size: 1.1rem; }
-  html.tv .evs { gap: 0.8rem; }
+  html.tv .week { flex: 1 1 0; min-height: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-gap: 0.8rem; }
+  .day { padding: 0.75rem 0.8rem; min-height: 0; display: flex; flex-direction: column; border-top: 4px solid transparent; }
+  .day.is-today { border-top-color: var(--cherry); }
+  .day-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .dow { font-weight: 900; font-size: 1.1rem; margin-right: 0.5rem; }
+  .date { color: var(--muted); font-size: 0.85rem; }
+  .evs { list-style: none; margin: 0; padding: 0; min-height: 0; }
+  html.tv .evs { flex: 1 1 0; overflow: hidden; }
+  .ev { border-left: 3px solid var(--tke-gray); padding: 0.05rem 0 0.05rem 0.55rem; margin-bottom: 0.6rem; min-width: 0; }
+  .ev:last-child { margin-bottom: 0; }
+  .ev-allday { border-left-color: var(--cherry); background: var(--panel-2); border-radius: 0 0.3rem 0.3rem 0; padding: 0.35rem 0.55rem; }
+  .ev-time { display: block; color: var(--muted); font-size: 0.85rem; }
+  .ev-title { display: block; font-weight: 700; line-height: 1.2; word-wrap: break-word; }
+  .ev-loc { display: block; color: var(--muted); font-size: 0.85rem; word-wrap: break-word; }
+  .more, .empty-day { color: var(--faint); font-size: 0.9rem; }
+  .more { margin-top: 0.5rem; }
+  html.tv .day { padding: 0.9rem 0.95rem; }
+  html.tv .day-head { margin-bottom: 0.9rem; }
+  html.tv .dow { font-size: 1.55rem; }
+  html.tv .date { font-size: 1.05rem; }
+  html.tv .ev { margin-bottom: 0.9rem; }
   html.tv .ev-time, html.tv .ev-loc { font-size: 1.05rem; }
   html.tv .ev-title { font-size: 1.25rem; }
   html.tv .more, html.tv .empty-day { font-size: 1.05rem; }
 
   /* ---------- TV rotation indicator ---------- */
   .rotation { display: none; }
-  html.tv .rotation { display: flex; gap: 1rem; margin-top: 1rem; }
-  .rot-item { flex: 1; display: flex; flex-direction: column; gap: 0.35rem; color: var(--faint); font: 600 1rem/1 var(--font-num); letter-spacing: 0.02em; }
+  html.tv .rotation { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 1rem; margin-top: 1rem; flex: none; }
+  .rot-item { color: var(--faint); font-weight: 700; font-size: 0.95rem; letter-spacing: 0.04em; }
   .rot-item.is-active { color: var(--text); }
-  .rot-track { display: block; height: 0.25rem; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .rot-track { display: block; height: 0.25rem; margin-top: 0.4rem; background: var(--track); border-radius: 999px; overflow: hidden; }
   .rot-fill { display: block; height: 100%; width: 0; background: var(--cherry); }
   .rot-item.is-active .rot-fill { animation: rotfill var(--dur, 30s) linear forwards; }
   .rot-item.is-active.is-paused .rot-fill { animation: none; width: 100%; }
   @keyframes rotfill { from { width: 0; } to { width: 100%; } }
 
-  @media (max-width: 640px) {
-    html:not(.tv) .top { padding: 0.65rem 1rem 0; }
-    html:not(.tv) .tabs { width: 100%; }
-    html:not(.tv) .tab { flex: 1; padding-left: 0.25rem; padding-right: 0.25rem; }
-    .headline { font-size: 1.75rem; }
-  }
   @media (prefers-reduced-motion: reduce) {
     html.tv .scene { transition: none; }
+    .fill { animation: none; }
     .rot-item.is-active .rot-fill { animation: none; width: 100%; }
   }
 </style>
@@ -259,15 +370,20 @@
 <div id="stage">
   <header class="top">
     <div class="brand">
-      <img class="logo" src="../4-ms3z5b1p-r5cl.png" alt="Tau Kappa Epsilon" onerror="var s=document.createElement('span');s.className='logo-fallback';s.setAttribute('role','img');s.setAttribute('aria-label','Tau Kappa Epsilon');s.textContent='ΤΚΕ';this.replaceWith(s)">
+      <span class="logo-wrap">
+        <img class="logo logo-on-light" src="../assets/tke-houseplate-black.png" alt="Tau Kappa Epsilon" onerror="this.hidden=true">
+        <img class="logo logo-on-dark" src="../4-ms3z5b1p-r5cl.png" alt="Tau Kappa Epsilon" onerror="this.hidden=true">
+      </span>
       <div>
-        <h1 class="chapter">Omicron Nu Chapter</h1>
-        <p class="updated" id="updated">Loading…</p>
+        <h1 class="chapter">Omicron-Nu Chapter</h1>
+        <p class="sub">Tau Kappa Epsilon &middot; <span id="updated">Loading…</span></p>
       </div>
     </div>
+    <div class="ranks" id="ranks-tv"></div>
     <div class="clock" aria-hidden="true"><div class="clock-time" id="clock-time"></div><div class="clock-date" id="clock-date"></div></div>
-    <nav class="tabs" role="tablist" aria-label="Dashboard screens" id="tabs"></nav>
   </header>
+  <nav class="tabs" role="tablist" aria-label="Dashboard screens" id="tabs"></nav>
+  <div class="ranks" id="ranks-m"></div>
   <div class="notices" id="notices" role="status" aria-live="polite"></div>
   <main id="main">
     <section class="scene" id="scene-kras" role="tabpanel" aria-labelledby="tab-kras"></section>
@@ -281,8 +397,8 @@
 <script>
 'use strict';
 
-// Supabase project URL and anon (public) key. Both are safe to publish: RLS
-// only lets this key read. Never put the service-role key here.
+// Supabase project URL and publishable key. Both are safe to publish: the key
+// can only read. Never put the secret (service-role) key here.
 const CONFIG = {
   supabaseUrl: 'https://zzringrmfcwlagehiyor.supabase.co',
   supabaseAnonKey: 'sb_publishable_auQHDPMkVN1GceSH7eAefg_WvAcZxGL',
@@ -295,15 +411,16 @@ const REFRESH_MS = 5 * 60e3;      // re-read the database
 const RELOAD_MS = 6 * 3600e3;     // TV: full page reload to pick up deploys
 const STALE_MS = 3 * 3600e3;      // warn when the last good sync is older than this
 const FETCH_TIMEOUT_MS = 15e3;
-const CACHE_KEY = 'on-dashboard-v1';
+const DAY_MS = 864e5;
+const CACHE_KEY = 'on-dashboard-v2';
 const SCENES = [
-  { id: 'kras', label: 'KRAs' },
+  { id: 'kras', label: 'Scoreboard' },
   { id: 'required', label: 'Required & bonus' },
   { id: 'week', label: 'This week' },
 ];
 
-const $ = (id) => document.getElementById(id);
-const sceneEls = SCENES.map((s) => $('scene-' + s.id));
+const $ = function (id) { return document.getElementById(id); };
+const sceneEls = SCENES.map(function (s) { return $('scene-' + s.id); });
 const keyProblem = secretKeyIn(CONFIG.supabaseAnonKey);
 const SAMPLE = params.has('sample') || !CONFIG.supabaseUrl || !CONFIG.supabaseAnonKey || Boolean(keyProblem);
 
@@ -311,39 +428,42 @@ const state = { data: null, error: null, lastGoodAt: null, failures: 0, scene: 0
 
 // ---------- Formatting ----------
 
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmtNum = (n, max = 2) => Number(n).toLocaleString('en-US', { maximumFractionDigits: max });
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return ESC[c]; }); };
+const fmtNum = function (n, max) { return Number(n).toLocaleString('en-US', { maximumFractionDigits: max == null ? 2 : max }); };
 // Two decimals, like nationals' page (40.79, not 40.8).
-const fmtPts = (n) => (n == null ? '–' : fmtNum(n, 2));
+const fmtPts = function (n) { return n == null ? '–' : fmtNum(n, 2); };
+const round2 = function (n) { return Math.round(n * 100) / 100; };
 const timeFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-const fmtTime = (d) => timeFmt.format(d).replace(':00', '');
-const fmtDay = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-const fmtWhen = (t) => {
+const fmtTime = function (d) { return timeFmt.format(d).replace(':00', ''); };
+const fmtDay = function (d) { return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); };
+const fmtWhen = function (t) {
   const d = new Date(t);
-  return d.toDateString() === new Date().toDateString() ? fmtTime(d) : `${fmtDay(d)}, ${fmtTime(d)}`;
+  return d.toDateString() === new Date().toDateString() ? fmtTime(d) : fmtDay(d) + ', ' + fmtTime(d);
 };
 function fmtRange(s, e) {
   const a = fmtTime(s), b = fmtTime(e);
-  const am = a.slice(-2), bm = b.slice(-2);
-  return (am === bm ? a.slice(0, -3) : a) + '–' + b;
+  return (a.slice(-2) === b.slice(-2) ? a.slice(0, -3) : a) + '–' + b;
 }
-const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const startOfDay = (t) => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
-const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-const trim = (s, n) => (s && s.length > n ? s.slice(0, n - 1) + '…' : s || '');
+const pad2 = function (n) { return (n < 10 ? '0' : '') + n; };
+const ymd = function (d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+const startOfDay = function (t) { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); };
+const addDays = function (d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); };
+const trim = function (s, n) { return s && s.length > n ? s.slice(0, n - 1) + '…' : s || ''; };
+const clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
 
 // Result and goal share a number of decimals, so a GPA reads "2.94 of 3.00".
 function fmtValue(k, which) {
   const n = which === 'current' ? k.current : k.goal;
   if (n == null) return null;
   if (k.kind === 'boolean') return n ? 'Done' : 'Not done';
-  const frac = (v) => v != null && Math.abs(v % 1) > 1e-9;
+  const frac = function (v) { return v != null && Math.abs(v % 1) > 1e-9; };
   const dp = frac(k.current) || frac(k.goal) ? 2 : 0;
   const s = Number(n).toLocaleString('en-US', { minimumFractionDigits: dp, maximumFractionDigits: dp });
   return k.kind === 'currency' ? '$' + s : s;
 }
 
-// ---------- Status and pace ----------
+// ---------- Status, pace and totals ----------
 
 /** Share of the KRA window that has passed (0..1), or null without dates. */
 function paceOf(k, now) {
@@ -351,7 +471,7 @@ function paceOf(k, now) {
   const s = new Date(k.term_start + 'T00:00:00').getTime();
   const e = new Date(k.due_date + 'T23:59:59').getTime();
   if (!(e > s)) return null;
-  return Math.min(1, Math.max(0, (now - s) / (e - s)));
+  return clamp((now - s) / (e - s), 0, 1);
 }
 
 function statusOf(k, now) {
@@ -365,198 +485,289 @@ function statusOf(k, now) {
 }
 
 function totals(kras) {
-  const t = {};
-  for (const s of ['kra', 'required', 'bonus']) {
-    const rows = kras.filter((k) => k.section === s);
+  const t = { all: { points: 0 } };
+  ['kra', 'required', 'bonus'].forEach(function (s) {
+    const rows = kras.filter(function (k) { return k.section === s; });
     t[s] = {
-      rows,
-      points: rows.reduce((a, k) => a + (Number(k.points) || 0), 0),
-      out_of: rows.reduce((a, k) => a + (Number(k.out_of) || 0), 0),
-      met: rows.filter((k) => k.met).length,
+      rows: rows,
+      points: round2(rows.reduce(function (a, k) { return a + (Number(k.points) || 0); }, 0)),
+      out_of: round2(rows.reduce(function (a, k) { return a + (Number(k.out_of) || 0); }, 0)),
+      met: rows.filter(function (k) { return k.met; }).length,
     };
-  }
+    t.all.points = round2(t.all.points + t[s].points);
+  });
   return t;
 }
 
-// ---------- Charts ----------
-
-function linePath(points, w, h, yMax) {
-  const xs = points.map((p) => p.x), x0 = Math.min(...xs), x1 = Math.max(...xs);
-  const sx = (x) => (x1 === x0 ? w : ((x - x0) / (x1 - x0)) * w);
-  const sy = (y) => h - (Math.min(y, yMax) / yMax) * h;
-  return { d: points.map((p, i) => `${i ? 'L' : 'M'}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join(''), sx, sy };
-}
-
-function sparkline(series, goal) {
-  const pts = series.filter((p) => p.y != null);
-  if (pts.length < 2) return '';
-  const yMax = Math.max(goal || 0, ...pts.map((p) => p.y)) || 1;
-  const { d, sx, sy } = linePath(pts, 100, 24, yMax);
-  const last = pts[pts.length - 1];
-  return `<svg class="spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
-    ${goal ? `<line x1="0" x2="100" y1="${sy(goal).toFixed(1)}" y2="${sy(goal).toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"/>` : ''}
-    <path d="${d}" fill="none" stroke="var(--muted)" stroke-width="1.75" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
-    <circle cx="${sx(last.x).toFixed(1)}" cy="${sy(last.y).toFixed(1)}" r="2.2" fill="var(--text)"/>
-  </svg>`;
-}
-
-function pointsTrend(snapshots, outOf) {
-  const byDay = new Map();
-  for (const s of snapshots) {
-    if (!String(s.kra_id).startsWith('kra-')) continue;
-    byDay.set(s.day, (byDay.get(s.day) || 0) + (Number(s.points) || 0));
+/** The KRA year, read from the dates set on the cumulative KRAs. */
+function yearInfo(kras, now) {
+  for (let i = 0; i < kras.length; i++) {
+    const k = kras[i];
+    if (!k.term_start || !k.due_date) continue;
+    const s = new Date(k.term_start + 'T00:00:00').getTime();
+    const e = new Date(k.due_date + 'T23:59:59').getTime();
+    if (e > s) return { elapsed: clamp((now - s) / (e - s), 0, 1), daysLeft: Math.max(0, Math.ceil((e - now) / DAY_MS)) };
   }
-  const days = [...byDay.keys()].sort();
-  if (days.length < 2) return '';
-  const pts = days.map((day) => ({ x: new Date(day + 'T12:00:00').getTime(), y: byDay.get(day) }));
-  const yMax = Math.max(outOf || 0, ...pts.map((p) => p.y)) || 1;
-  const { d } = linePath(pts, 200, 40, yMax);
-  const since = esc(fmtDay(new Date(days[0] + 'T12:00:00')));
-  const firstPts = fmtPts(pts[0].y), lastPts = fmtPts(pts[pts.length - 1].y);
-  return `<div class="trend">
-    <svg viewBox="0 0 200 40" preserveAspectRatio="none" role="img" aria-label="KRA points since ${since}: ${firstPts} then, ${lastPts} now">
-      <path d="${d}L200,40L0,40Z" fill="var(--cherry)" fill-opacity="0.22"/>
-      <path d="${d}" fill="none" stroke="var(--cherry)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
-    </svg>
-    <div class="trend-cap">Points since ${since}: ${firstPts} → ${lastPts}</div>
-  </div>`;
+  return null;
 }
 
-// ---------- Screen 1: KRAs ----------
+// ---------- Pieces ----------
+
+const ICONS = {
+  met: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" style="fill:var(--met)"/><path d="M6.8 12.4l3.4 3.4 7-7.4" style="fill:none;stroke:var(--panel);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round"/></svg>',
+  ontrack: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.7" style="fill:none;stroke:var(--met);stroke-width:2.6"/><path d="M8.3 15.7l7-7M10.2 8.6h5.2v5.2" style="fill:none;stroke:var(--met);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round"/></svg>',
+  behind: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.7" style="fill:none;stroke:var(--behind);stroke-width:2.6"/><path d="M12 6.8v6.2" style="fill:none;stroke:var(--behind);stroke-width:2.8;stroke-linecap:round"/><circle cx="12" cy="16.9" r="1.6" style="fill:var(--behind)"/></svg>',
+  none: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.7" style="fill:none;stroke:var(--none);stroke-width:2.6"/><path d="M8 12h8" style="fill:none;stroke:var(--none);stroke-width:2.6;stroke-linecap:round"/></svg>',
+};
+
+function meter(pct, pace, label) {
+  return '<span class="meter" role="img" aria-label="' + esc(label) + '"><span class="track"><span class="fill" style="width:' + clamp(pct, 0, 100).toFixed(1) + '%"></span></span>' +
+    (pace != null ? '<span class="tick" style="left:' + (pace * 100).toFixed(1) + '%"></span>' : '') + '</span>';
+}
+
+function pbar(pct, widthPct) {
+  return '<span class="pbar"' + (widthPct != null ? ' style="width:' + widthPct.toFixed(1) + '%"' : '') + ' aria-hidden="true"><span class="fill" style="width:' + clamp(pct, 0, 100).toFixed(1) + '%"></span></span>';
+}
+
+function niceMax(v) {
+  if (!(v > 0)) return 1;
+  const p = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+  const m = v / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+}
+
+/** KRA total by day, from the daily snapshots. One series, so no legend. */
+function trendChart(snapshots) {
+  const byDay = {};
+  snapshots.forEach(function (s) { byDay[s.day] = (byDay[s.day] || 0) + (Number(s.points) || 0); });
+  const days = Object.keys(byDay).sort();
+  if (days.length < 2) return '<p class="trend-empty">The trend line starts once there are two days of history.</p>';
+  const pts = days.map(function (d) { return { day: d, t: new Date(d + 'T12:00:00').getTime(), v: round2(byDay[d]) }; });
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+  const yMax = niceMax(Math.max.apply(null, pts.map(function (p) { return p.v; })) * 1.12);
+  pts.forEach(function (p) { p.x = (p.t - t0) / (t1 - t0) * 100; p.y = 100 - p.v / yMax * 100; });
+  const d = pts.map(function (p, i) { return (i ? 'L' : 'M') + p.x.toFixed(2) + ',' + p.y.toFixed(2); }).join('');
+  const last = pts[pts.length - 1];
+  const ticks = [0, yMax / 2, yMax];
+  const data = pts.map(function (p) { return [fmtDay(new Date(p.t)), fmtPts(p.v), +p.x.toFixed(2)]; });
+  return '<div class="chart"><div class="plot" data-points="' + esc(JSON.stringify(data)) + '" role="img" aria-label="KRA total by day: ' + fmtPts(pts[0].v) + ' on ' + esc(fmtDay(new Date(t0))) + ', ' + fmtPts(last.v) + ' now">' +
+    '<svg viewBox="0 0 100 100" preserveAspectRatio="none">' +
+      ticks.map(function (v) { const y = (100 - v / yMax * 100).toFixed(2); return '<line class="grid" x1="0" x2="100" y1="' + y + '" y2="' + y + '" vector-effect="non-scaling-stroke"/>'; }).join('') +
+      '<path class="area" d="' + d + 'L100,100L0,100Z"/><path class="line" d="' + d + '" vector-effect="non-scaling-stroke"/></svg>' +
+    ticks.slice(1).map(function (v) { return '<span class="ylab" style="top:' + (100 - v / yMax * 100).toFixed(1) + '%">' + fmtNum(v, 1) + '</span>'; }).join('') +
+    '<span class="dot" style="left:100%;top:' + last.y.toFixed(1) + '%"></span>' +
+    '<span class="endlab" style="top:' + last.y.toFixed(1) + '%">' + fmtPts(last.v) + '</span>' +
+    '<span class="cross" hidden></span><span class="tip" hidden></span></div>' +
+    '<div class="xaxis"><span>' + esc(fmtDay(new Date(t0))) + '</span><span>' + esc(fmtDay(new Date(t1))) + '</span></div></div>';
+}
+
+// Members: point at the trend line to read any day.
+function wireCharts() {
+  if (TV || !window.PointerEvent) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.plot[data-points]'), function (plot) {
+    const pts = JSON.parse(plot.getAttribute('data-points'));
+    const cross = plot.querySelector('.cross'), tip = plot.querySelector('.tip');
+    const hide = function () { cross.hidden = true; tip.hidden = true; };
+    const move = function (ev) {
+      const r = plot.getBoundingClientRect();
+      const x = clamp((ev.clientX - r.left) / r.width * 100, 0, 100);
+      let best = pts[0];
+      pts.forEach(function (p) { if (Math.abs(p[2] - x) < Math.abs(best[2] - x)) best = p; });
+      cross.style.left = best[2] + '%';
+      tip.textContent = best[0] + ': ' + best[1];
+      cross.hidden = false; tip.hidden = false;
+      const w = tip.offsetWidth, px = best[2] / 100 * r.width;
+      tip.style.left = clamp(px - w / 2, 0, r.width - w) + 'px';
+    };
+    plot.addEventListener('pointermove', move);
+    plot.addEventListener('pointerdown', move);
+    plot.addEventListener('pointerleave', hide);
+  });
+}
+
+// ---------- Screen 1: scoreboard ----------
+
+function kraRow(k, now, maxOut) {
+  const st = statusOf(k, now);
+  const cur = fmtValue(k, 'current');
+  const goal = k.kind === 'boolean' ? null : fmtValue(k, 'goal');
+  const pace = paceOf(k, now);
+  const fill = k.kind === 'boolean' ? (k.current ? 100 : 0) : (k.goal > 0 && k.current != null ? clamp(k.current / k.goal * 100, 0, 100) : (k.met ? 100 : 0));
+  // A zero goal (Finances: owe nationals nothing) isn't a target to count up to.
+  const sub = k.kind === 'boolean' ? '' : goal == null ? 'No goal set' : cur == null || k.goal === 0 ? 'Goal ' + goal : 'of ' + goal;
+  const ptsPct = k.out_of > 0 ? (Number(k.points) || 0) / k.out_of * 100 : 0;
+  const barW = maxOut > 0 ? Math.max(8, (Number(k.out_of) || 0) / maxOut * 100) : 100;
+  const label = Math.round(fill) + '% of goal' + (pace != null ? '; on pace would be ' + Math.round(pace * 100) + '%' : '');
+  return '<div class="krow s-' + st.key + '">' + ICONS[st.key] +
+    '<div class="k-name"><span class="k-title">' + esc(k.name) + '</span><span class="k-status">' + st.label + '</span>' + (k.note ? '<span class="k-note">' + esc(k.note) + '</span>' : '') + '</div>' +
+    '<div class="k-prog"><div class="k-val"><b' + (cur == null ? ' class="is-text"' : '') + '>' + esc(cur == null ? 'Not reported' : cur) + '</b>' + (sub ? ' <span>' + esc(sub) + '</span>' : '') + '</div>' + meter(fill, pace, label) + '</div>' +
+    '<div class="k-pts"><div class="k-ptsnum"><b>' + fmtPts(k.points) + '</b><span>/' + fmtPts(k.out_of) + ' pts</span></div>' + pbar(ptsPct, barW) + '</div>' +
+  '</div>';
+}
 
 function renderKras(d, now) {
   const t = totals(d.kras);
   const kras = t.kra.rows;
-  if (!kras.length) return `<p class="empty">No KRA data yet. It appears after the first sync.</p>`;
-  const series = new Map();
-  for (const s of d.snapshots || []) {
-    if (!series.has(s.kra_id)) series.set(s.kra_id, []);
-    series.get(s.kra_id).push({ x: new Date(s.day + 'T12:00:00').getTime(), y: s.current == null ? null : Number(s.current) });
-  }
-
-  const strip = kras.map((k) => {
-    const st = statusOf(k, now);
-    const pct = k.out_of > 0 ? Math.min(100, (Number(k.points) || 0) / k.out_of * 100) : 0;
-    return `<div class="seg s-${st.key}" style="flex:${Math.max(Number(k.out_of) || 0, 0.5)} 1 0">
-      <span class="seg-name">${esc(k.name)}</span>
-      <span class="seg-bar"><span class="seg-fill" style="width:${pct}%"></span></span>
-      <span class="seg-pts">${fmtPts(k.points)}/${fmtPts(k.out_of)}</span>
-    </div>`;
-  }).join('');
-  const stripLabel = kras.map((k) => `${k.name} ${fmtPts(k.points)} of ${fmtPts(k.out_of)}`).join(', ');
-
-  const cards = kras.map((k) => {
-    const st = statusOf(k, now);
-    const cur = fmtValue(k, 'current');
-    const goal = k.kind === 'boolean' ? null : fmtValue(k, 'goal');
-    const pace = paceOf(k, now);
-    const fill = k.kind === 'boolean' ? (k.current ? 100 : 0) : (k.goal > 0 && k.current != null ? Math.min(100, Math.max(0, k.current / k.goal * 100)) : (k.met ? 100 : 0));
-    // A zero goal (Finances: owe nationals nothing) isn't a target to count up to.
-    const goalText = k.kind === 'boolean' ? '' : goal == null ? 'No goal set' : cur == null || k.goal === 0 ? `Goal ${esc(goal)}` : `of ${esc(goal)} goal`;
-    const due = k.due_date ? `<span>Due ${esc(fmtDay(new Date(k.due_date + 'T12:00:00')))}</span>` : '';
-    return `<article class="card s-${st.key}">
-      <div class="card-top"><h3 class="card-name">${esc(k.name)}</h3><span class="pill">${st.label}</span></div>
-      <div class="card-vals">
-        ${cur != null ? `<span class="v-cur">${esc(cur)}</span>` : `<span class="v-cur is-text">Not reported</span>`}
-        ${goalText ? `<span class="v-goal">${goalText}</span>` : ''}
-      </div>
-      <div class="bar" role="img" aria-label="${Math.round(fill)}% of goal${pace != null ? `; on pace would be ${Math.round(pace * 100)}%` : ''}">
-        <span class="bar-fill" style="width:${fill}%"></span>
-        ${pace != null ? `<span class="pace" style="left:${(pace * 100).toFixed(1)}%" title="Where you'd be on pace today"></span>` : ''}
-      </div>
-      <div class="card-foot"><span><b>${fmtPts(k.points)}</b>/${fmtPts(k.out_of)} pts</span>${due}${sparkline(series.get(k.id) || [], k.goal)}</div>
-      ${k.note ? `<p class="note">${esc(k.note)}</p>` : ''}
-    </article>`;
-  }).join('');
-
-  const cols = kras.length <= 9 ? 3 : kras.length <= 12 ? 4 : 5;
-  return `<div class="kra-head">
-      <h2 class="headline"><b>${fmtPts(t.kra.points)}/${fmtPts(t.kra.out_of)}</b> KRA points. <b>${t.kra.met} of ${kras.length}</b> met.</h2>
-      <div class="side">
-        <div><div class="total-label">Required</div><div class="total-num">${fmtPts(t.required.points)}/${fmtPts(t.required.out_of)}</div></div>
-        <div><div class="total-label">Bonus</div><div class="total-num">${fmtPts(t.bonus.points)}/${fmtPts(t.bonus.out_of)}</div></div>
-        ${pointsTrend(d.snapshots || [], t.kra.out_of)}
-      </div>
-    </div>
-    <div class="strip" role="img" aria-label="Points by KRA: ${esc(stripLabel)}">${strip}</div>
-    <div class="kra-grid" style="--cols:${cols}">${cards}</div>`;
+  if (!kras.length) return '<p class="empty">No KRA data yet. It appears after the first sync.</p>';
+  const year = yearInfo(d.kras, now);
+  const maxOut = Math.max.apply(null, kras.map(function (k) { return Number(k.out_of) || 0; }));
+  const tile = function (name, sec) {
+    return '<div class="panel tile"><div class="eyebrow">' + name + '</div><div class="tile-num">' + fmtPts(sec.points) + '<span>/' + fmtPts(sec.out_of) + '</span></div>' +
+      pbar(sec.out_of > 0 ? sec.points / sec.out_of * 100 : 0) + '<div class="tile-cap">' + sec.met + ' of ' + sec.rows.length + ' met</div></div>';
+  };
+  const anyPace = kras.some(function (k) { return paceOf(k, now) != null; });
+  return '<div class="board">' +
+    '<div class="side">' +
+      '<section class="panel hero" aria-label="KRA total">' +
+        '<div class="eyebrow">KRA total</div>' +
+        '<div class="hero-num">' + fmtPts(t.all.points) + '<span>%</span></div>' +
+        meter(t.all.points, year ? year.elapsed : null, fmtPts(t.all.points) + ' of 100' + (year ? '; ' + Math.round(year.elapsed * 100) + '% of the KRA year has passed' : '')) +
+        (year ? '<div class="hero-cap"><span><span class="tick-key"></span>' + Math.round(year.elapsed * 100) + '% of the KRA year gone</span><span>' + year.daysLeft + ' days left</span></div>' : '') +
+      '</section>' +
+      '<div class="tiles">' + tile('KRAs', t.kra) + tile('Required', t.required) + tile('Bonus', t.bonus) + '</div>' +
+      '<section class="panel trend" aria-label="KRA total by day"><div class="trend-head"><span class="eyebrow">KRA total by day</span></div>' + trendChart(d.snapshots || []) + '</section>' +
+    '</div>' +
+    '<section class="panel ktable" aria-label="Key Result Areas">' +
+      '<div class="khead"><span></span><span>Key Result Area</span><span>Progress to goal' + (anyPace ? '<span class="key"><span class="tick-key"></span>on pace today</span>' : '') + '</span><span>Points</span></div>' +
+      '<div class="krows">' + kras.map(function (k) { return kraRow(k, now, maxOut); }).join('') + '</div>' +
+    '</section>' +
+  '</div>';
 }
 
-// ---------- Screen 2: Required & bonus ----------
+// ---------- Screen 2: required & bonus ----------
 
 function itemValue(k) {
   if (k.kind === 'boolean') return k.current == null ? 'Not reported' : k.current ? 'Done' : 'Not done';
   const cur = fmtValue(k, 'current');
   const goal = fmtValue(k, 'goal');
-  if (cur == null) return 'Not reported' + (goal == null ? ' · No goal set' : '');
-  return goal == null ? `${cur} · No goal set` : k.goal === 0 ? `${cur} · goal ${goal}` : `${cur} of ${goal}`;
+  if (cur == null) return 'Not reported' + (goal == null ? ' · no goal set' : ' · goal ' + goal);
+  return goal == null ? cur + ' · no goal set' : k.goal === 0 ? cur + ' · goal ' + goal : cur + ' of ' + goal;
 }
 
 function renderList(title, sec, now) {
-  const rows = sec.rows;
-  const items = rows.map((k) => {
+  const items = sec.rows.map(function (k) {
     const st = statusOf(k, now);
-    return `<li class="item s-${st.key}">
-      <span class="dot" aria-hidden="true"></span>
-      <span class="item-name">${esc(k.name)}${k.note ? `<span class="item-note">${esc(k.note)}</span>` : ''}</span>
-      <span class="item-val${k.kind === 'boolean' ? ' is-flag' : ''}">${esc(itemValue(k))}<span class="sr-only">, ${st.label}</span></span>
-      <span class="item-pts">${fmtPts(k.points)}/${fmtPts(k.out_of)}</span>
-    </li>`;
+    return '<li class="item s-' + st.key + '">' + ICONS[st.key] +
+      '<span class="item-name">' + esc(k.name) + '<span class="item-val">' + esc(itemValue(k)) + (k.note ? ' · ' + esc(k.note) : '') + '<span class="sr-only">, ' + st.label + '</span></span></span>' +
+      '<span class="item-pts">' + fmtPts(k.points) + '<span>/' + fmtPts(k.out_of) + '</span></span></li>';
   }).join('');
-  return `<section class="list-block" aria-label="${esc(title)}">
-    <header class="list-head"><h2>${esc(title)}</h2>
-      <span class="list-count">${sec.met} of ${rows.length} met</span>
-      <span class="list-total">${fmtPts(sec.points)}/${fmtPts(sec.out_of)} <span>pts</span></span>
-    </header>
-    ${rows.length ? `<ul class="items">${items}</ul>` : `<p class="empty" style="padding-top:.75rem">Nothing listed.</p>`}
-  </section>`;
+  return '<section class="panel list-block" aria-label="' + esc(title) + '">' +
+    '<header class="list-head"><div class="list-top"><h2>' + esc(title) + '</h2><span class="list-total">' + fmtPts(sec.points) + '<span>/' + fmtPts(sec.out_of) + ' pts</span></span></div>' +
+      pbar(sec.out_of > 0 ? sec.points / sec.out_of * 100 : 0) + '<div class="list-count">' + sec.met + ' of ' + sec.rows.length + ' met</div></header>' +
+    (sec.rows.length ? '<ul class="items">' + items + '</ul>' : '<p class="empty" style="padding:.75rem 0">Nothing listed.</p>') +
+  '</section>';
 }
 
 function renderRequired(d, now) {
   const t = totals(d.kras);
-  if (!t.required.rows.length && !t.bonus.rows.length) return `<p class="empty">No required or bonus items yet. They appear after the first sync.</p>`;
-  return `<div class="lists">${renderList('Required', t.required, now)}${renderList('Bonus', t.bonus, now)}</div>`;
+  if (!t.required.rows.length && !t.bonus.rows.length) return '<p class="empty">No required or bonus items yet. They appear after the first sync.</p>';
+  return '<div class="lists">' + renderList('Annually required', t.required, now) + renderList('Bonus', t.bonus, now) + '</div>';
 }
 
-// ---------- Screen 3: This week ----------
+// ---------- Screen 3: this week ----------
 
 function eventsOn(events, dayStart) {
   const dayEnd = addDays(dayStart, 1).getTime(), start = dayStart.getTime(), key = ymd(dayStart);
   const out = [];
-  for (const e of events) {
+  events.forEach(function (e) {
     if (e.all_day) {
       const s = e.starts_at.slice(0, 10), en = e.ends_at ? e.ends_at.slice(0, 10) : '';
-      if (s <= key && key < (en > s ? en : ymd(addDays(new Date(s + 'T12:00:00'), 1)))) out.push({ e, rank: 0, sort: 0, label: '' });
-      continue;
+      if (s <= key && key < (en > s ? en : ymd(addDays(new Date(s + 'T12:00:00'), 1)))) out.push({ e: e, rank: 0, sort: 0, label: '' });
+      return;
     }
     const s = Date.parse(e.starts_at), en = e.ends_at ? Date.parse(e.ends_at) : s;
-    if (!(s < dayEnd && (en > start || (en === s && s >= start)))) continue;
+    if (!(s < dayEnd && (en > start || (en === s && s >= start)))) return;
     let label, rank = 2;
     if (s >= start && en <= dayEnd) label = en > s ? fmtRange(new Date(s), new Date(en)) : fmtTime(new Date(s));
     else if (s < start && en > dayEnd) { label = 'All day'; rank = 1; }
     else if (s < start) { label = 'Until ' + fmtTime(new Date(en)); rank = 1; }
     else label = 'From ' + fmtTime(new Date(s));
-    out.push({ e, rank, sort: s, label });
-  }
-  return out.sort((a, b) => a.rank - b.rank || a.sort - b.sort || a.e.title.localeCompare(b.e.title));
+    out.push({ e: e, rank: rank, sort: s, label: label });
+  });
+  return out.sort(function (a, b) { return a.rank - b.rank || a.sort - b.sort || a.e.title.localeCompare(b.e.title); });
 }
 
 function renderWeek(d, now) {
   const today = startOfDay(now);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i));
-  const cols = days.map((day, i) => {
+  const days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return addDays(today, i); });
+  const cols = days.map(function (day, i) {
     const evs = eventsOn(d.events || [], day);
     const name = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : day.toLocaleDateString('en-US', { weekday: 'long' });
-    const items = evs.map(({ e, label }) => e.all_day
-      ? `<li class="ev ev-allday"><span class="ev-title">${esc(e.title)}</span></li>`
-      : `<li class="ev"><span class="ev-time">${esc(label)}</span><span class="ev-title">${esc(e.title)}</span>${e.location ? `<span class="ev-loc">${esc(e.location)}</span>` : ''}</li>`).join('');
-    return `<section class="day${i === 0 ? ' is-today' : ''}" aria-label="${esc(name)}, ${esc(fmtDay(day))}">
-      <header class="day-head"><span class="dow">${esc(name)}</span><span class="date">${esc(fmtDay(day))}</span></header>
-      ${evs.length ? `<ul class="evs">${items}</ul><p class="more" hidden></p>` : `<p class="empty-day">Nothing scheduled</p>`}
-    </section>`;
+    const items = evs.map(function (x) {
+      return x.e.all_day
+        ? '<li class="ev ev-allday"><span class="ev-title">' + esc(x.e.title) + '</span></li>'
+        : '<li class="ev"><span class="ev-time">' + esc(x.label) + '</span><span class="ev-title">' + esc(x.e.title) + '</span>' + (x.e.location ? '<span class="ev-loc">' + esc(x.e.location) + '</span>' : '') + '</li>';
+    }).join('');
+    return '<section class="panel day' + (i === 0 ? ' is-today' : '') + '" aria-label="' + esc(name) + ', ' + esc(fmtDay(day)) + '">' +
+      '<header class="day-head"><span class="dow">' + esc(name) + '</span><span class="date">' + esc(fmtDay(day)) + '</span></header>' +
+      (evs.length ? '<ul class="evs">' + items + '</ul><p class="more" hidden></p>' : '<p class="empty-day">Nothing scheduled</p>') +
+    '</section>';
   }).join('');
-  return `<div class="week-head"><h2>This week</h2><span class="range">${esc(fmtDay(days[0]))} – ${esc(fmtDay(days[6]))}</span></div>
-    <div class="week">${cols}</div>`;
+  return '<div class="week-head"><h2>This week</h2><span class="range">' + esc(fmtDay(days[0])) + ' – ' + esc(fmtDay(days[6])) + '</span><div class="nextup" id="nextup"></div></div>' +
+    '<div class="week">' + cols + '</div>';
+}
+
+// ---------- Next event ----------
+
+function nextUpHtml(events, now) {
+  let cur = null, next = null;
+  (events || []).forEach(function (e) {
+    if (e.all_day) return;
+    const s = Date.parse(e.starts_at), en = e.ends_at ? Date.parse(e.ends_at) : s;
+    if (s <= now && en > now) { if (!cur) cur = e; }
+    else if (s > now && s - now < 7 * DAY_MS && (!next || s < Date.parse(next.starts_at))) next = e;
+  });
+  const e = cur || next;
+  if (!e) return '';
+  const s = Date.parse(e.starts_at);
+  let meta;
+  if (cur) meta = 'Until ' + fmtTime(new Date(Date.parse(e.ends_at)));
+  else {
+    const dayDiff = Math.round((startOfDay(s) - startOfDay(now)) / DAY_MS);
+    const dayName = dayDiff === 0 ? 'Today' : dayDiff === 1 ? 'Tomorrow' : new Date(s).toLocaleDateString('en-US', { weekday: 'long' });
+    const mins = Math.max(1, Math.round((s - now) / 60e3));
+    const inText = mins < 60 ? mins + ' min' : mins < 24 * 60 ? Math.floor(mins / 60) + ' h' + (mins % 60 ? ' ' + (mins % 60) + ' min' : '') : Math.round(mins / 1440) + ' days';
+    meta = dayName + ' ' + fmtTime(new Date(s)) + ' · in ' + inText;
+  }
+  if (e.location) meta += ' · ' + e.location;
+  return '<div class="nu"><span class="nu-label">' + (cur ? 'Happening now' : 'Next up') + '</span><span class="nu-body"><span class="nu-title">' + esc(e.title) + '</span><span class="nu-meta">' + esc(meta) + '</span></span></div>';
+}
+
+function renderNextUp(now) {
+  const el = $('nextup');
+  if (!el) return;
+  const html = state.data ? nextUpHtml(state.data.events, now) : '';
+  if (el.innerHTML !== html) el.innerHTML = html;
+}
+
+// ---------- Rankings ----------
+
+const ARROW_UP = '<svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1l4.6 8H.4z" style="fill:var(--met)"/></svg>';
+const ARROW_DOWN = '<svg class="arrow" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 9L.4 1h9.2z" style="fill:var(--behind)"/></svg>';
+
+function moveHtml(n, since) {
+  if (n == null) return '';
+  if (n === 0) return '<span class="rk-move">No change ' + since + '</span>';
+  return '<span class="rk-move">' + (n > 0 ? ARROW_UP + 'Up ' : ARROW_DOWN + 'Down ') + Math.abs(n) + ' ' + since + '</span>';
+}
+
+/** The chapter's place in nationals' KRA ranking, from tke.org's public rankings page. */
+function ranksHtml(r, now) {
+  if (!r || r.national_rank == null) return '';
+  const item = function (label, rank, total) {
+    return '<div class="rk-item"><span class="rk-label">' + esc(label) + '</span><span class="rk-num">#' + fmtNum(rank, 0) + (total ? '<span> of ' + fmtNum(total, 0) + '</span>' : '') + '</span></div>';
+  };
+  const age = r.updated_at ? now - Date.parse(r.updated_at) : 0;
+  return '<div class="rk">' + item('National rank', r.national_rank, r.national_total) +
+    (r.region_rank != null ? item('Region ' + r.region + ' rank', r.region_rank, r.region_total) : '') +
+    '<div class="rk-moves">' + moveHtml(r.since_yesterday, 'since yesterday') + moveHtml(r.since_week, 'since last week') +
+      (age > 36 * 3600e3 ? '<span class="rk-move">Ranks as of ' + esc(fmtDay(new Date(r.updated_at))) + '</span>' : '') + '</div></div>';
+}
+
+function renderRanks(now) {
+  const el = $(TV ? 'ranks-tv' : 'ranks-m');
+  const html = state.data ? ranksHtml(state.data.rank, now) : '';
+  if (el.innerHTML !== html) el.innerHTML = html;
 }
 
 // ---------- Header, notices, render ----------
@@ -567,19 +778,19 @@ function updatedText(d, now) {
   if (!d.lastOk) return 'Not synced yet';
   const t = Date.parse(d.lastOk.ran_at);
   const mins = Math.max(0, Math.round((now - t) / 60e3));
-  const ago = mins < 1 ? 'just now' : mins < 90 ? `${mins} min ago` : `${Math.round(mins / 60)} h ago`;
-  return TV ? `Updated ${fmtWhen(t)}` : `Updated ${fmtWhen(t)} · ${ago}`;
+  const ago = mins < 1 ? 'just now' : mins < 90 ? mins + ' min ago' : Math.round(mins / 60) + ' h ago';
+  return TV ? 'Updated ' + fmtWhen(t) : 'Updated ' + fmtWhen(t) + ' · ' + ago;
 }
 
 function noticeList(d, now) {
   const out = [];
-  if (keyProblem) out.push(['bad', 'This page has a secret Supabase key in CONFIG. Remove it, rotate the key in Supabase, and use the anon key instead.']);
-  else if (d && d.source === 'sample') out.push(['info', 'Sample data. Add the Supabase URL and anon key to CONFIG in Dashboard/index.html to show live numbers.']);
-  if (state.error) out.push(['warn', d ? `Can't reach the database. Showing data from ${fmtWhen(state.lastGoodAt)}. Retrying.` : `Can't reach the database. Retrying.`]);
+  if (keyProblem) out.push(['bad', 'This page has a secret Supabase key in CONFIG. Remove it, rotate the key in Supabase, and use the publishable key instead.']);
+  else if (d && d.source === 'sample') out.push(['info', 'Sample data, not live numbers.']);
+  if (state.error) out.push(['warn', d ? "Can't reach the database. Showing data from " + fmtWhen(state.lastGoodAt) + '. Retrying.' : "Can't reach the database. Retrying."]);
   if (d && d.source === 'live') {
     if (!d.lastOk) out.push(['warn', 'No successful sync yet.']);
-    else if (now - Date.parse(d.lastOk.ran_at) > STALE_MS) out.push(['warn', `This data is ${Math.floor((now - Date.parse(d.lastOk.ran_at)) / 3600e3)} hours old. The hourly sync may be stuck.`]);
-    if (d.lastRun && !d.lastRun.ok) out.push(['warn', `The last sync failed (${fmtWhen(d.lastRun.ran_at)}): ${trim(d.lastRun.message, TV ? 110 : 220)}`]);
+    else if (now - Date.parse(d.lastOk.ran_at) > STALE_MS) out.push(['warn', 'This data is ' + Math.floor((now - Date.parse(d.lastOk.ran_at)) / 3600e3) + ' hours old. The hourly sync may be stuck.']);
+    if (d.lastRun && !d.lastRun.ok) out.push(['warn', 'The last sync failed (' + fmtWhen(d.lastRun.ran_at) + '): ' + trim(d.lastRun.message, TV ? 110 : 220)]);
   }
   return out;
 }
@@ -588,46 +799,46 @@ function renderAll() {
   const now = Date.now();
   const d = state.data;
   $('updated').textContent = updatedText(d, now);
-  $('notices').innerHTML = noticeList(d, now).map(([level, text]) => `<div class="notice ${level}">${esc(text)}</div>`).join('');
+  $('notices').innerHTML = noticeList(d, now).map(function (n) { return '<div class="notice ' + n[0] + '">' + esc(n[1]) + '</div>'; }).join('');
+  renderRanks(now);
   const blank = { kras: [], events: [], snapshots: [] };
   const renderers = [renderKras, renderRequired, renderWeek];
-  sceneEls.forEach((el, i) => {
+  sceneEls.forEach(function (el, i) {
     try { el.innerHTML = renderers[i](d || blank, now); } catch (err) {
       console.error(err);
-      el.innerHTML = `<p class="empty">Couldn't draw this screen. The rest of the dashboard still works.</p>`;
+      el.innerHTML = "<p class=\"empty\">Couldn't draw this screen. The rest of the dashboard still works.</p>";
     }
   });
+  renderNextUp(now);
+  wireCharts();
   fitTv();
 }
 
-// TV only: make each screen fit 1080p without scrolling.
+// TV only: make each screen fit without scrolling.
 function overflows(el) {
-  if (el.scrollHeight > el.clientHeight + 1) return true;
-  for (const c of el.querySelectorAll('.card, .list-block')) if (c.scrollHeight > c.clientHeight + 1) return true;
-  return false;
+  const boxes = el.querySelectorAll('.krow, .list-block, .side');
+  for (let i = 0; i < boxes.length; i++) if (boxes[i].scrollHeight > boxes[i].clientHeight + 1) return true;
+  return el.scrollHeight > el.clientHeight + 1;
 }
 function fitTv() {
   if (!TV) return;
-  const levels = ['dense', 'denser', 'densest'];
-  for (const el of sceneEls) {
-    el.classList.remove(...levels);
-    for (const level of levels) {
-      if (!overflows(el)) break;
-      el.classList.add(level);
-    }
-  }
-  for (const day of document.querySelectorAll('.day')) {
+  const levels = ['tight', 'tighter'];
+  sceneEls.forEach(function (el) {
+    levels.forEach(function (l) { el.classList.remove(l); });
+    for (let i = 0; i < levels.length && overflows(el); i++) el.classList.add(levels[i]);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.day'), function (day) {
     const list = day.querySelector('.evs'), more = day.querySelector('.more');
-    if (!list || !more) continue;
-    const items = [...list.children];
+    if (!list || !more) return;
+    const items = Array.prototype.slice.call(list.children);
     let hiddenCount = 0;
     while (list.scrollHeight > list.clientHeight + 1 && hiddenCount < items.length - 1) {
       more.hidden = false;
       items[items.length - 1 - hiddenCount].hidden = true;
       hiddenCount++;
-      more.textContent = `+${hiddenCount} more`;
+      more.textContent = '+' + hiddenCount + ' more';
     }
-  }
+  });
 }
 
 // ---------- Data ----------
@@ -645,17 +856,23 @@ function secretKeyIn(key) {
 }
 
 function fetchWithTimeout(url, opts) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
-  return fetch(url, Object.assign({ cache: 'no-store', signal: ctrl.signal }, opts)).finally(() => clearTimeout(timer));
+  const o = Object.assign({ cache: 'no-store' }, opts);
+  let timer = 0;
+  if (window.AbortController) {
+    const ctrl = new AbortController();
+    o.signal = ctrl.signal;
+    timer = setTimeout(function () { ctrl.abort(); }, FETCH_TIMEOUT_MS);
+  }
+  const done = function () { clearTimeout(timer); };
+  return fetch(url, o).then(function (r) { done(); return r; }, function (e) { done(); throw e; });
 }
 
 async function api(query) {
   const key = CONFIG.supabaseAnonKey;
   const headers = { apikey: key, Accept: 'application/json' };
   if (!/^sb_/.test(key)) headers.Authorization = 'Bearer ' + key; // legacy JWT anon keys
-  const res = await fetchWithTimeout(`${CONFIG.supabaseUrl.replace(/\/+$/, '')}/rest/v1/${query}`, { headers });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const res = await fetchWithTimeout(CONFIG.supabaseUrl.replace(/\/+$/, '') + '/rest/v1/' + query, { headers: headers });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
 }
 
@@ -663,21 +880,23 @@ async function loadLive(now) {
   const today = startOfDay(now);
   const from = encodeURIComponent(addDays(today, -1).toISOString());
   const to = encodeURIComponent(addDays(today, 8).toISOString());
-  const [kras, events, lastRun, lastOk] = await Promise.all([
+  const got = await Promise.all([
     api('kras?select=*&order=section.asc,sort_order.asc'),
-    api(`events?select=*&starts_at=lt.${to}&ends_at=gt.${from}&order=starts_at.asc`),
+    api('events?select=*&starts_at=lt.' + to + '&ends_at=gt.' + from + '&order=starts_at.asc'),
     api('sync_runs?select=ran_at,ok,message&order=ran_at.desc&limit=1'),
     api('sync_runs?select=ran_at,ok,message&ok=eq.true&order=ran_at.desc&limit=1'),
   ]);
   let snapshots = [];
   try {
     for (let offset = 0; offset < 20000; offset += 1000) {
-      const page = await api(`kra_snapshots?select=day,kra_id,current,points&kra_id=like.kra-*&order=day.asc,kra_id.asc&limit=1000&offset=${offset}`);
+      const page = await api('kra_snapshots?select=day,kra_id,points&order=day.asc,kra_id.asc&limit=1000&offset=' + offset);
       snapshots = snapshots.concat(page);
       if (page.length < 1000) break;
     }
   } catch (e) { snapshots = []; } // history is a nice-to-have; never block the page on it
-  return { source: 'live', kras, events, lastRun: lastRun[0] || null, lastOk: lastOk[0] || null, snapshots };
+  let rank = null;
+  try { rank = (await api('rankings?select=*&id=eq.kra'))[0] || null; } catch (e) { rank = null; } // so are the ranks
+  return { source: 'live', kras: got[0], events: got[1], lastRun: got[2][0] || null, lastOk: got[3][0] || null, snapshots: snapshots, rank: rank };
 }
 
 function cacheSave(d) {
@@ -709,7 +928,7 @@ async function refresh() {
   }
   renderAll();
   // Back off 30 s, 1, 2, 4 min… while the network is down, then every 5 min.
-  const delay = state.error ? Math.min(REFRESH_MS, 30e3 * 2 ** (state.failures - 1)) : REFRESH_MS;
+  const delay = state.error ? Math.min(REFRESH_MS, 30e3 * Math.pow(2, state.failures - 1)) : REFRESH_MS;
   refreshTimer = setTimeout(refresh, delay);
 }
 
@@ -718,7 +937,7 @@ async function refresh() {
 let rotateTimer = 0;
 function showScene(i, opts) {
   state.scene = (i + SCENES.length) % SCENES.length;
-  SCENES.forEach((s, j) => {
+  SCENES.forEach(function (s, j) {
     const on = j === state.scene;
     sceneEls[j].classList.toggle('is-active', on);
     if (TV) sceneEls[j].setAttribute('aria-hidden', String(!on));
@@ -733,89 +952,89 @@ function showScene(i, opts) {
     if (opts && opts.fromUser) history.replaceState(null, '', '#' + SCENES[state.scene].id);
     return;
   }
-  [...$('rotation').children].forEach((el, j) => {
+  Array.prototype.forEach.call($('rotation').children, function (el, j) {
     el.classList.toggle('is-active', j === state.scene);
     el.classList.toggle('is-paused', state.paused);
     if (j === state.scene) { const f = el.querySelector('.rot-fill'); f.style.animation = 'none'; void f.offsetWidth; f.style.animation = ''; }
   });
   clearTimeout(rotateTimer);
-  if (!state.paused) rotateTimer = setTimeout(() => showScene(state.scene + 1), ROTATE_S * 1000);
+  if (!state.paused) rotateTimer = setTimeout(function () { showScene(state.scene + 1); }, ROTATE_S * 1000);
 }
 
 function sceneFrom(value) {
-  const i = SCENES.findIndex((s) => s.id === String(value || '').replace('#', ''));
-  return i < 0 ? 0 : i;
+  const id = String(value || '').replace('#', '');
+  for (let i = 0; i < SCENES.length; i++) if (SCENES[i].id === id) return i;
+  return 0;
 }
 
 function setUpMembers() {
   const tabs = $('tabs');
-  tabs.innerHTML = SCENES.map((s) => `<button class="tab" role="tab" id="tab-${s.id}" aria-controls="scene-${s.id}" type="button">${esc(s.label)}</button>`).join('');
-  SCENES.forEach((s, i) => $('tab-' + s.id).addEventListener('click', () => showScene(i, { fromUser: true })));
-  tabs.addEventListener('keydown', (e) => {
+  tabs.innerHTML = SCENES.map(function (s) { return '<button class="tab" role="tab" id="tab-' + s.id + '" aria-controls="scene-' + s.id + '" type="button">' + esc(s.label) + '</button>'; }).join('');
+  SCENES.forEach(function (s, i) { $('tab-' + s.id).addEventListener('click', function () { showScene(i, { fromUser: true }); }); });
+  tabs.addEventListener('keydown', function (e) {
     const moves = { ArrowRight: 1, ArrowLeft: -1, Home: -state.scene, End: SCENES.length - 1 - state.scene };
     if (!(e.key in moves)) return;
     e.preventDefault();
     showScene(state.scene + moves[e.key], { fromUser: true });
     $('tab-' + SCENES[state.scene].id).focus();
   });
-  addEventListener('hashchange', () => showScene(sceneFrom(location.hash)));
+  addEventListener('hashchange', function () { showScene(sceneFrom(location.hash)); });
+  setInterval(function () { renderNextUp(Date.now()); }, 30e3);
   showScene(params.has('scene') ? sceneFrom(params.get('scene')) : sceneFrom(location.hash));
 }
 
 function setUpTv() {
-  $('rotation').innerHTML = SCENES.map((s) => `<div class="rot-item" style="--dur:${ROTATE_S || 30}s"><span>${esc(s.label)}</span><span class="rot-track"><span class="rot-fill"></span></span></div>`).join('');
-  addEventListener('keydown', (e) => {
+  $('rotation').innerHTML = SCENES.map(function (s) { return '<div class="rot-item" style="--dur:' + (ROTATE_S || 30) + 's"><span>' + esc(s.label) + '</span><span class="rot-track"><span class="rot-fill"></span></span></div>'; }).join('');
+  addEventListener('keydown', function (e) {
     if (e.key === 'ArrowRight') showScene(state.scene + 1);
     else if (e.key === 'ArrowLeft') showScene(state.scene - 1);
     else if (e.key === ' ' && ROTATE_S) { state.paused = !state.paused; showScene(state.scene); }
   });
 
-  // Clock.
-  const tick = () => {
+  // Clock, "Updated" time and the next-event countdown.
+  const tick = function () {
     const d = new Date();
     $('clock-time').textContent = timeFmt.format(d);
     $('clock-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     $('updated').textContent = updatedText(state.data, d.getTime());
+    renderNextUp(d.getTime());
   };
   tick();
   setInterval(tick, 15e3);
 
   // Burn-in: nudge the whole layout a few pixels to a new spot every hour.
   const SHIFTS = [[0, 0], [5, 3], [-4, 5], [3, -4], [-5, -2], [2, 5], [-3, -5], [4, 1]];
-  const shift = () => {
-    const [x, y] = SHIFTS[Math.floor(Date.now() / 3600e3) % SHIFTS.length];
-    $('stage').style.transform = `translate(${x * 0.06}rem, ${y * 0.06}rem)`;
+  const shift = function () {
+    const s = SHIFTS[Math.floor(Date.now() / 3600e3) % SHIFTS.length];
+    $('stage').style.transform = 'translate(' + s[0] * 0.06 + 'rem, ' + s[1] * 0.06 + 'rem)';
   };
   shift();
   setInterval(shift, 60e3);
 
   // Full reload every 6 h to pick up new versions, but only when the site
   // answers, so a Wi-Fi drop never leaves the TV on a browser error page.
-  const tryReload = async () => {
+  const tryReload = function () {
     if (navigator.onLine === false) return setTimeout(tryReload, 5 * 60e3);
-    try {
-      const res = await fetchWithTimeout(location.href, {});
-      if (res.ok) return location.reload();
-    } catch (e) { /* offline or timed out */ }
-    setTimeout(tryReload, 5 * 60e3);
+    fetchWithTimeout(location.href, {}).then(function (res) {
+      if (res.ok) location.reload(); else setTimeout(tryReload, 5 * 60e3);
+    }, function () { setTimeout(tryReload, 5 * 60e3); });
   };
   setTimeout(tryReload, RELOAD_MS);
 
   // Keep the screen awake where the browser allows it.
-  const wake = () => { try { if (navigator.wakeLock && !document.hidden) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) { /* unsupported */ } };
+  const wake = function () { try { if (navigator.wakeLock && !document.hidden) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) { /* unsupported */ } };
   wake();
   document.addEventListener('visibilitychange', wake);
 
   let resizeTimer = 0;
-  addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitTv, 200); });
+  addEventListener('resize', function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(fitTv, 200); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTv);
 
   showScene(sceneFrom(params.get('scene')));
 }
 
-// ---------- Sample data (shown until Supabase is configured) ----------
-// The rows on nationals' KRA page on Oct 30, 2026 (28/90, 2 of 9 met;
-// required 3/11; bonus 0/10).
+// ---------- Sample data (?sample) ----------
+// The rows on nationals' KRA page on Oct 30, 2026, with made-up history and events.
 
 const SAMPLE_ROWS = {
   // [name, result, goal, points, out of, met, cumulative]
@@ -851,42 +1070,39 @@ function sampleValue(t) {
   if (/^true$/i.test(t)) return 1;
   if (/^false$/i.test(t)) return 0;
   const n = Number(t.replace(/[$,%\s]/g, ''));
-  return Number.isFinite(n) ? n : null;
+  return isFinite(n) ? n : null;
 }
 
 function sampleData(now) {
   const kras = [];
-  for (const section of Object.keys(SAMPLE_ROWS)) {
-    SAMPLE_ROWS[section].forEach(([name, result, goal, points, outOf, met, cumulative], i) => {
-      const kind = /^(true|false)$/i.test(result) || /^(true|false)$/i.test(goal) ? 'boolean' : (result + goal).includes('$') ? 'currency' : 'number';
+  Object.keys(SAMPLE_ROWS).forEach(function (section) {
+    SAMPLE_ROWS[section].forEach(function (r, i) {
+      const kind = /^(true|false)$/i.test(r[1]) || /^(true|false)$/i.test(r[2]) ? 'boolean' : (r[1] + r[2]).indexOf('$') >= 0 ? 'currency' : 'number';
       kras.push({
-        id: `${section}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
-        section, name, kind, result_text: result, goal_text: goal,
-        current: sampleValue(result), goal: sampleValue(goal), points, out_of: outOf, met, sort_order: i,
-        term_start: cumulative ? '2026-06-01' : null, due_date: cumulative ? '2027-05-31' : null, note: null,
+        id: section + '-' + r[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        section: section, name: r[0], kind: kind, result_text: r[1], goal_text: r[2],
+        current: sampleValue(r[1]), goal: sampleValue(r[2]), points: r[3], out_of: r[4], met: r[5], sort_order: i,
+        term_start: r[6] ? '2026-06-01' : null, due_date: r[6] ? '2027-05-31' : null, note: null,
       });
     });
-  }
+  });
 
-  // Weekly history since the start of the semester, ending at today's values.
+  // Weekly steps since the start of the semester, ending at today's values.
   const snapshots = [];
   const start = new Date(2026, 7, 24), end = startOfDay(now);
-  const span = Math.max(1, Math.round((end - start) / 864e5));
+  const span = Math.max(1, Math.round((end - start) / DAY_MS));
   for (let day = 0; day <= span; day++) {
     const f = day === span ? 1 : Math.pow(Math.floor(day / 7) * 7 / span, 1.3);
     const date = ymd(addDays(start, day));
-    for (const k of kras.filter((r) => r.section === 'kra')) {
-      const cur = k.current == null ? null : k.kind === 'boolean' ? (f > 0.6 ? k.current : 0) : Math.round(k.current * Math.min(1, f) * 100) / 100;
-      snapshots.push({ day: date, kra_id: k.id, current: cur, points: Math.round(k.points * Math.min(1, f)) });
-    }
+    kras.forEach(function (k) { snapshots.push({ day: date, kra_id: k.id, points: round2(k.points * Math.min(1, f)) }); });
   }
 
   // A plausible week, placed relative to today so it always has something on it.
   const today = startOfDay(now);
-  const inDays = (dow) => (dow - today.getDay() + 7) % 7;
-  const at = (offset, h, m) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset, h, m || 0).toISOString();
-  const timed = (title, offset, h1, m1, h2, m2, location) => ({ id: title + offset, title, starts_at: at(offset, h1, m1), ends_at: at(offset, h2, m2), all_day: false, location: location || null });
-  const allDay = (title, offset, days) => ({ id: title + offset, title, starts_at: ymd(addDays(today, offset)) + 'T00:00:00.000Z', ends_at: ymd(addDays(today, offset + (days || 1))) + 'T00:00:00.000Z', all_day: true, location: null });
+  const inDays = function (dow) { return (dow - today.getDay() + 7) % 7; };
+  const at = function (offset, h, m) { return new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset, h, m || 0).toISOString(); };
+  const timed = function (title, offset, h1, m1, h2, m2, loc) { return { id: title + offset, title: title, starts_at: at(offset, h1, m1), ends_at: at(offset, h2, m2), all_day: false, location: loc || null }; };
+  const allDay = function (title, offset, n) { return { id: title + offset, title: title, starts_at: ymd(addDays(today, offset)) + 'T00:00:00.000Z', ends_at: ymd(addDays(today, offset + (n || 1))) + 'T00:00:00.000Z', all_day: true, location: null }; };
   const events = [
     timed('Chapter meeting', inDays(0), 19, 0, 20, 30, 'Chapter room'),
     timed('Executive board', inDays(3), 20, 0, 21, 0, 'Chapter room'),
@@ -900,15 +1116,16 @@ function sampleData(now) {
   ];
 
   const synced = new Date(now - 23 * 60e3).toISOString();
-  return { source: 'sample', kras, events, snapshots, lastRun: { ran_at: synced, ok: true, message: '' }, lastOk: { ran_at: synced, ok: true, message: '' } };
+  const rank = { national_rank: 92, national_total: 208, region: '2', region_rank: 30, region_total: 52, since_yesterday: 24, since_week: -7, prev_year_rank: 37, updated_at: synced };
+  return { source: 'sample', kras: kras, events: events, snapshots: snapshots, rank: rank, lastRun: { ran_at: synced, ok: true, message: '' }, lastOk: { ran_at: synced, ok: true, message: '' } };
 }
 
 // ---------- Start ----------
 
 if (TV) setUpTv(); else setUpMembers();
 refresh();
-addEventListener('online', () => refresh());
-document.addEventListener('visibilitychange', () => {
+addEventListener('online', function () { refresh(); });
+document.addEventListener('visibilitychange', function () {
   if (!document.hidden && Date.now() - state.lastAttempt > 60e3) refresh();
 });
 </script>

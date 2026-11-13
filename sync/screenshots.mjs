@@ -78,6 +78,7 @@ function mockSupabase(page, rows, runs, { down = false } = {}) {
     if (table === 'kras') body = rows.kras;
     else if (table === 'events') body = rows.events;
     else if (table === 'kra_snapshots') body = Number(u.searchParams.get('offset') || 0) ? [] : rows.snapshots;
+    else if (table === 'rankings') body = [{ id: 'kra', national_rank: 92, national_total: 208, region: '2', region_rank: 30, region_total: 52, score_text: '43.79%', since_yesterday: 24, since_week: -7, prev_year_rank: 37, updated_at: new Date().toISOString() }];
     else if (table === 'sync_runs') body = u.searchParams.get('ok') === 'eq.true' ? [runs.lastOk].filter(Boolean) : [runs.lastRun].filter(Boolean);
     else return route.fulfill({ status: 404, body: '[]' });
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -89,7 +90,7 @@ function mockSupabase(page, rows, runs, { down = false } = {}) {
 async function settle(page) {
   await page.waitForLoadState('networkidle').catch(() => {});
   await page.evaluate(() => document.fonts && document.fonts.ready);
-  await page.waitForTimeout(900); // scene fade + fit pass
+  await page.waitForTimeout(1500); // scene fade, bars growing in, fit pass
 }
 
 async function tvProblems(page) {
@@ -100,9 +101,14 @@ async function tvProblems(page) {
     if (doc.scrollWidth > innerWidth + 1) out.push(`page scrolls sideways (${doc.scrollWidth} > ${innerWidth})`);
     const scene = document.querySelector('.scene.is-active');
     if (scene.scrollHeight > scene.clientHeight + 1) out.push(`active screen is cut off (${scene.scrollHeight} > ${scene.clientHeight})`);
-    for (const c of scene.querySelectorAll('.card, .list-block')) {
-      if (c.scrollHeight > c.clientHeight + 1) out.push(`"${c.querySelector('h2,h3')?.textContent}" is cut off`);
+    for (const c of scene.querySelectorAll('.krow, .list-block, .side, .day, .hero, .tile, .trend')) {
+      if (c.scrollHeight > c.clientHeight + 1) out.push(`"${(c.querySelector('h2, .k-title, .eyebrow, .dow')?.textContent || c.className).trim()}" is cut off`);
     }
+    // Header pieces must not run into each other.
+    const boxes = ['.brand', '#ranks-tv', '.clock'].map((sel) => document.querySelector(sel)).filter((el) => el && el.getClientRects().length).map((el) => el.getBoundingClientRect());
+    for (let i = 1; i < boxes.length; i++) if (boxes[i].left < boxes[i - 1].right - 0.5) out.push('header pieces overlap');
+    const name = document.querySelector('.chapter');
+    if (name.scrollWidth > name.clientWidth + 1) out.push('chapter name is cut off');
     // The stage itself shifts a few px each hour (burn-in), so check what's drawn.
     for (const el of [document.querySelector('.top'), scene, document.getElementById('rotation')]) {
       const r = el.getBoundingClientRect();
@@ -165,7 +171,7 @@ async function main() {
         const r = await tvProblems(page);
         const name = `tv-${w}x${h}-${scene}`;
         if (w === 1920 || w === 1280) await page.screenshot({ path: path.join(OUT, `${name}.png`) });
-        record(name, r.problems, `smallest text ${r.minFont}px ("${r.minText}")${/dense/.test(r.dense) ? ' [' + r.dense.replace('scene ', '').replace('is-active', '').trim() + ']' : ''}`);
+        record(name, r.problems, `smallest text ${r.minFont}px ("${r.minText}")${/tight/.test(r.dense) ? ' [' + r.dense.replace('scene ', '').replace('is-active', '').trim() + ']' : ''}`);
       }
       await page.close();
     }
@@ -193,15 +199,25 @@ async function main() {
         await settle(page);
         const r = await tvProblems(page);
         const notices = await page.locator('.notice').allInnerTexts();
-        const headline = await page.locator('.headline').innerText().catch(() => '');
+        const headline = (await page.locator('#scene-kras .hero-num').innerText().catch(() => '')).replace(/\s+/g, '');
         const problems = [...r.problems, ...notices.map((n) => `unexpected notice: ${n}`)];
-        if (scene === 'kras' && !headline.includes('28/90 KRA points. 2 of 9 met.')) problems.push(`headline was "${headline}"`);
+        // Fixture totals: KRAs 28 + required 3 + bonus 0.
+        if (scene === 'kras' && headline !== '31%') problems.push(`KRA total was "${headline}"`);
         if (scene === 'kras') {
-          const h = await page.evaluate(() => ({ snaps: state.data.snapshots.length, trend: !!document.querySelector('.trend') && document.querySelector('.trend').getBoundingClientRect().width > 0, sparks: [...document.querySelectorAll('.spark')].filter((s) => s.getBoundingClientRect().width > 0).length, cls: document.querySelector('#scene-kras').className }));
-          if (!/densest/.test(h.cls) && (!h.trend || h.sparks < 8)) problems.push(`history missing: ${JSON.stringify(h)}`);
+          const h = await page.evaluate(() => ({
+            tiles: [...document.querySelectorAll('.tile-num')].map((t) => t.textContent),
+            rows: document.querySelectorAll('.krow').length,
+            trendLine: !!document.querySelector('.trend .plot path.line'),
+            ranks: document.getElementById('ranks-tv').textContent.replace(/\s+/g, ' '),
+          }));
+          if (h.tiles.join() !== '28/90,3/11,0/10') problems.push(`tiles were ${h.tiles.join()}`);
+          if (h.rows !== 9) problems.push(`${h.rows} KRA rows, expected 9`);
+          if (!h.trendLine) problems.push('trend line missing');
+          if (!/#92 of 208/.test(h.ranks) || !/#30 of 52/.test(h.ranks) || !/Up 24 since yesterday/.test(h.ranks) || !/Down 7 since last week/.test(h.ranks)) problems.push(`ranks were "${h.ranks}"`);
         }
+        if (scene === 'week' && !(await page.locator('#nextup .nu-title').count())) problems.push('next-up is missing from the week screen');
         await page.screenshot({ path: path.join(OUT, `live-tv-${scene}.png`) });
-        record(`live-tv-${scene}`, problems, scene === 'kras' ? `"${headline}"` : '');
+        record(`live-tv-${scene}`, problems, scene === 'kras' ? `KRA total ${headline}` : '');
       }
       await page.close();
     }
@@ -234,7 +250,7 @@ async function main() {
       await page.evaluate(() => window.refresh());
       await page.waitForTimeout(500);
       const downNotices = await page.locator('.notice').allInnerTexts();
-      const keptData = (await page.locator('.card').count()) === 9;
+      const keptData = (await page.locator('.krow').count()) === 9;
       await page.screenshot({ path: path.join(OUT, 'live-tv-db-down.png') });
       await page.unroute(`${MOCK_DB}/rest/v1/**`);
       await mockSupabase(page, rows, runs);
