@@ -75,8 +75,13 @@ export function parseRankings(html, chapter) {
 }
 
 export async function fetchRankingsHtml(url = RANKINGS_URL) {
-  const res = await fetch(url, {
-    headers: { 'user-agent': 'tkeon-dashboard-sync (+https://tkeon.fit/Dashboard)', accept: 'text/html' },
+  // tke.org serves this page from caches that can be hours apart (two fetches a
+  // minute apart once gave rank 83 and rank 92). A changing query string and
+  // no-cache ask for the current copy.
+  const fresh = new URL(url);
+  fresh.searchParams.set('t', String(Math.floor(Date.now() / 60000)));
+  const res = await fetch(fresh, {
+    headers: { 'user-agent': 'tkeon-dashboard-sync (+https://tkeon.fit/Dashboard)', accept: 'text/html', 'cache-control': 'no-cache', pragma: 'no-cache' },
     signal: AbortSignal.timeout(45_000),
   });
   if (!res.ok) throw new Error(`Rankings page answered HTTP ${res.status}.`);
