@@ -53,11 +53,13 @@
   .top { display: flex; align-items: center; gap: 0.75rem 1.25rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
   html.tv .top { padding: 0 0 1rem; flex-wrap: nowrap; }
   .brand { display: flex; align-items: center; gap: 0.85rem; min-width: 0; flex: 1 1 auto; }
-  .logo { display: block; height: 2.6rem; width: auto; flex: none; }
+  /* The houseplate file has clear space built in, so it's sized up and pulled in. */
+  .logo { display: block; height: 3.6rem; width: auto; flex: none; margin: -0.5rem -0.3rem -0.5rem -0.5rem; }
   .logo-fallback { display: inline-flex; align-items: center; justify-content: center; flex: none; height: 2.6rem; padding: 0 0.55rem; border-radius: 0.25rem; background: var(--cherry); color: #fff; font: 700 1.45rem/1 var(--font-num); letter-spacing: 0.06em; }
   .chapter { font-size: 1.5rem; line-height: 1.05; }
   .updated { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.875rem; }
-  html.tv .logo, html.tv .logo-fallback { height: 3.4rem; }
+  html.tv .logo { height: 5.2rem; margin: -0.9rem -0.3rem -0.9rem -0.7rem; }
+  html.tv .logo-fallback { height: 3.4rem; }
   html.tv .logo-fallback { font-size: 1.9rem; padding: 0 0.7rem; }
   html.tv .chapter { font-size: 2.3rem; }
   html.tv .updated { font-size: 1.05rem; }
@@ -257,7 +259,7 @@
 <div id="stage">
   <header class="top">
     <div class="brand">
-      <img class="logo" src="tke-logo-white.png" alt="Tau Kappa Epsilon" onerror="var s=document.createElement('span');s.className='logo-fallback';s.setAttribute('role','img');s.setAttribute('aria-label','Tau Kappa Epsilon');s.textContent='ΤΚΕ';this.replaceWith(s)">
+      <img class="logo" src="../4-ms3z5b1p-r5cl.png" alt="Tau Kappa Epsilon" onerror="var s=document.createElement('span');s.className='logo-fallback';s.setAttribute('role','img');s.setAttribute('aria-label','Tau Kappa Epsilon');s.textContent='ΤΚΕ';this.replaceWith(s)">
       <div>
         <h1 class="chapter">Omicron Nu Chapter</h1>
         <p class="updated" id="updated">Loading…</p>
