@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Page not found · TKE Omicron Nu</title>
+<script>
+  // GitHub Pages paths are case-sensitive. Send /dashboard, /INTEREST/ and the
+  // like to the real folders, keeping the rest of the address (?tv, #...).
+  // Written for old browsers too: the chapter-room TV may land here.
+  (function () {
+    var PAGES = { dashboard: '/Dashboard/', interest: '/Interest/' };
+    var m = /^\/([^\/]+)(\/?)(.*)$/.exec(location.pathname);
+    if (!m) return;
+    var page = PAGES[m[1].toLowerCase()];
+    if (!page || '/' + m[1] + '/' === page) return; // unknown, or already right (a real missing file)
+    location.replace(page + m[3] + location.search + location.hash);
+  })();
+</script>
+<style>
+  :root { --bg: #f4f4f5; --text: #131315; --muted: #5c5c61; --accent: #AD2624; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #131315; --text: #f4f4f5; --muted: #a1a1a6; --accent: #e0574f; } }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         background: var(--bg); color: var(--text); font: 17px/1.5 Lato, -apple-system, Helvetica, Arial, sans-serif; }
+  main { padding: 24px 16px; max-width: 420px; text-align: center; }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  p { color: var(--muted); margin: 0 0 20px; }
+  a { color: var(--accent); font-weight: 700; text-decoration: none; margin: 0 10px; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Page not found</h1>
+  <p>That page isn't on tkeon.fit.</p>
+  <a href="/">Home</a><a href="/Dashboard/">Dashboard</a><a href="/Interest/">Interest form</a>
+</main>
+</body>
+</html>
