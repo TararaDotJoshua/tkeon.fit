@@ -167,12 +167,20 @@
   .tab:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
   .account { flex: none; margin-left: 0.6rem; }
   html.tv .account { display: none; }
-  .gtabs, .subtabs { display: none; }
+  .gtabs { display: none; }
   html:not(.can-recruit) .needs-recruit { display: none !important; } /* the Recruitment tab, until an admin lets you in */
-  /* Phones: three tabs in a bottom bar, like a native app (KRA, This week,
-     Goals). KRA shows the scoreboard with required & bonus under it; Goals has
-     a Goals | Board switch at the top. The page keeps clear of the notch and
-     the home indicator. Desktop keeps one tab per screen at the top. */
+  /* The Metrics tab opens a menu: Scoreboard, Required & bonus, Goals, Board. */
+  .tab .caret, .gtab .caret { display: inline-block; margin-left: 0.25rem; font-size: 0.7em; }
+  .tab-sub { color: var(--muted); }
+  .menu { position: fixed; z-index: 40; min-width: 14rem; padding: 0.35rem; background: var(--panel); border: 1px solid var(--line); border-radius: 0.8rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); }
+  .menu[hidden] { display: none; }
+  .menu-item { -webkit-appearance: none; appearance: none; display: flex; align-items: center; width: 100%; min-height: 46px; padding: 0.55rem 0.85rem; border: 0; border-radius: 0.55rem; background: none; color: var(--text); font: 700 1rem/1.2 var(--font); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .menu-item:hover, .menu-item:focus { background: var(--panel-2); outline: none; }
+  .menu-item:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
+  .menu-item[aria-checked="true"] { color: var(--cherry); }
+  .menu-item .menu-check { margin-left: auto; padding-left: 1rem; }
+  /* Phones: the tabs sit in a bottom bar, like a native app, and the page keeps
+     clear of the notch and the home indicator. Desktop has them across the top. */
   @media (max-width: 700px) {
     html:not(.tv) body { padding-bottom: 4.2rem; padding-bottom: calc(3.9rem + env(safe-area-inset-bottom, 0px)); }
     html:not(.tv) .top { padding-top: calc(0.7rem + env(safe-area-inset-top, 0px)); border-bottom: 1px solid var(--line); }
@@ -180,13 +188,9 @@
     html:not(.tv) .gtabs { display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 20; padding: 0 0.4rem; padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--head-bg); border-top: 1px solid var(--line); }
     .gtab { -webkit-appearance: none; appearance: none; flex: 1 1 0; min-height: 3.6rem; padding: 0.4rem 0.1rem 0.35rem; background: none; border: 0; border-top: 3px solid transparent; color: var(--muted); cursor: pointer; font: 700 0.72rem/1.1 var(--font); -webkit-tap-highlight-color: transparent; }
     .gtab[aria-selected="true"] { border-top-color: var(--cherry); color: var(--cherry); }
-    .gtab:focus-visible, .subtab:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
+    .gtab:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
     .gtab svg { display: block; width: 1.5rem; height: 1.5rem; margin: 0 auto 0.15rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    html:not(.tv) .subtabs:not(:empty) { display: flex; margin: 0.9rem 1rem 0; padding: 0.2rem; background: var(--track); border-radius: 0.7rem; }
-    .subtab { -webkit-appearance: none; appearance: none; flex: 1 1 0; min-height: 38px; padding: 0.3rem 0.5rem; background: none; border: 0; border-radius: 0.55rem; color: var(--muted); cursor: pointer; font: 700 0.9rem/1.1 var(--font); -webkit-tap-highlight-color: transparent; }
-    .subtab[aria-selected="true"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
-    html:not(.tv) #scene-required:not([hidden]) { margin-top: 1rem; } /* sits under the scoreboard in the KRA tab */
-    html:not(.tv) .ranks.not-kra { display: none; } /* on a phone the rankings show only in the KRA tab */
+    html:not(.tv) .ranks.not-kra { display: none; } /* on a phone the rankings show only with the scoreboard and required & bonus */
   }
 
   .notices { max-width: 1180px; margin: 0 auto; padding: 0 1rem; }
@@ -438,7 +442,7 @@
   </header>
   <nav class="tabs" role="tablist" aria-label="Dashboard screens" id="tabs"></nav>
   <div class="ranks" id="ranks-m"></div>
-  <div class="subtabs" id="subtabs" role="tablist" aria-label="Screens in this tab"></div>
+  <div class="menu" id="metrics-menu" role="menu" aria-label="Metrics" hidden></div>
   <div class="notices" id="notices" role="status" aria-live="polite"></div>
   <main id="main">
     <section class="scene" id="scene-kras" role="tabpanel" aria-labelledby="tab-kras"></section>
@@ -477,31 +481,31 @@ const CACHE_KEY = 'on-dashboard-v2';
 const keyProblem = secretKeyIn(CONFIG.supabaseAnonKey);
 const SAMPLE = params.has('sample') || !CONFIG.supabaseUrl || !CONFIG.supabaseAnonKey || Boolean(keyProblem);
 const SCENES = [
-  { id: 'kras', label: 'Scoreboard', group: 'kra' },
-  { id: 'required', label: 'Required & bonus', group: 'kra' },
+  { id: 'kras', label: 'Scoreboard', group: 'metrics' },
+  { id: 'required', label: 'Required & bonus', group: 'metrics' },
   { id: 'week', label: 'This week', group: 'week' },
 ];
-// On a phone the screens are grouped into three bottom tabs. `stack` shows a
-// group's screens one under another; otherwise a switch at the top picks one.
+// The tabs: on a phone a bottom bar, on a desktop across the top. A `menu` tab
+// (Metrics) opens a list of its screens; the others open their one screen.
+// `wide` is the label on a desktop, where there's room.
 const GROUPS = [
-  { id: 'kra', label: 'KRA', stack: true, icon: '<path d="M5 20V11M12 20V4M19 20v-6M2 20h20"/>' },
+  { id: 'metrics', label: 'Metrics', menu: true, icon: '<path d="M5 20V11M12 20V4M19 20v-6M2 20h20"/>' },
   { id: 'week', label: 'This week', icon: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>' },
 ];
 // Members only (never the TV): goals, the task board and settings. Dashboard/app/
 // draws these screens and handles sign-in; it loads on demand.
 if (!TV && !SAMPLE) {
-  SCENES.push({ id: 'goals', label: 'Goals', group: 'goals', app: true });
-  SCENES.push({ id: 'board', label: 'Board', group: 'goals', app: true });
+  SCENES.push({ id: 'goals', label: 'Goals', group: 'metrics', app: true });
+  SCENES.push({ id: 'board', label: 'Board', group: 'metrics', app: true });
   SCENES.push({ id: 'quick', label: 'Quick access', group: 'quick', app: true }); // org chart, study hours
   SCENES.push({ id: 'recruit', label: 'Recruitment', group: 'recruit', app: true, locked: true }); // only for brothers an admin let in
   SCENES.push({ id: 'settings', label: 'Settings', app: true, noTab: true }); // opened from the profile photo
-  GROUPS.push({ id: 'goals', label: 'Goals', icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>' });
-  GROUPS.push({ id: 'quick', label: 'Quick', icon: '<path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z"/>' });
-  GROUPS.push({ id: 'recruit', label: 'Recruit', locked: true, icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.7.8 2.7 2.5 3 5.2"/>' });
+  GROUPS.push({ id: 'quick', label: 'Quick', wide: 'Quick access', icon: '<path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z"/>' });
+  GROUPS.push({ id: 'recruit', label: 'Recruit', wide: 'Recruitment', locked: true, icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.7.8 2.7 2.5 3 5.2"/>' });
 }
+let menuFor = null, menuBtn = null; // which tab's menu (Metrics) is open, and the button that opened it
 const isPhone = function () { return !TV && window.matchMedia && matchMedia('(max-width: 700px)').matches; };
 const groupOf = function (id) { for (let i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i]; return null; };
-const lastInGroup = {}; // which screen of a group was open last, so its tab returns there
 
 const $ = function (id) { return document.getElementById(id); };
 const sceneEls = SCENES.map(function (s) { return $('scene-' + s.id); });
@@ -1093,30 +1097,25 @@ let rotateTimer = 0;
 function showScene(i, opts) {
   state.scene = (i + SCENES.length) % SCENES.length;
   const cur = SCENES[state.scene];
-  const group = groupOf(cur.group);
-  const stacked = isPhone() && group && group.stack;
   SCENES.forEach(function (s, j) {
-    const on = j === state.scene || Boolean(stacked && s.group === cur.group);
+    const on = j === state.scene;
     sceneEls[j].classList.toggle('is-active', on);
     if (TV) sceneEls[j].setAttribute('aria-hidden', String(!on));
-    else {
-      sceneEls[j].hidden = !on;
-      const tab = $('tab-' + s.id);
-      if (tab) { tab.setAttribute('aria-selected', String(j === state.scene)); tab.tabIndex = j === state.scene ? 0 : -1; }
-    }
+    else sceneEls[j].hidden = !on;
   });
   if (!TV) {
-    if (cur.group) lastInGroup[cur.group] = cur.id;
-    $('ranks-m').classList.toggle('not-kra', cur.group !== 'kra');
-    GROUPS.forEach(function (g) { $('gtab-' + g.id).setAttribute('aria-selected', String(g.id === cur.group)); });
-    // The Goals | Board switch (any group with more than one screen that isn't stacked).
-    const mates = group && !group.stack ? SCENES.filter(function (s) { return s.group === group.id; }) : [];
-    $('subtabs').innerHTML = mates.length > 1 ? mates.map(function (s) {
-      return '<button class="subtab" role="tab" type="button" data-scene="' + s.id + '" aria-selected="' + (s.id === cur.id) + '">' + esc(s.label) + '</button>';
-    }).join('') : '';
+    closeMenu();
+    $('ranks-m').classList.toggle('not-kra', cur.id !== 'kras' && cur.id !== 'required');
+    GROUPS.forEach(function (g) {
+      const on = g.id === cur.group;
+      $('gtab-' + g.id).setAttribute('aria-selected', String(on));
+      $('tab-' + g.id).setAttribute('aria-selected', String(on));
+      $('tab-' + g.id).tabIndex = on || (!cur.group && g === GROUPS[0]) ? 0 : -1;
+      // On a desktop the Metrics tab names the screen it's showing: "Metrics · Board".
+      if (g.menu) $('tab-sub-' + g.id).textContent = on ? ' · ' + cur.label : '';
+    });
     if (opts && opts.fromUser) history.replaceState(null, '', '#' + cur.id);
-    // A tab starts at the top; in the stacked KRA tab a link to "required" goes to that part.
-    if (opts && opts.fromUser) window.scrollTo(0, stacked && cur.id !== 'kras' ? sceneEls[state.scene].offsetTop - 8 : 0);
+    if (opts && opts.fromUser) window.scrollTo(0, 0);
     if (cur.app) loadApp();
     document.dispatchEvent(new CustomEvent('dash:scene', { detail: cur.id }));
     return;
@@ -1157,38 +1156,87 @@ function sceneFrom(value) {
   return 0;
 }
 
+// ---------- The Metrics menu ----------
+
+function openMenu(screens, btn) {
+  const menu = $('metrics-menu');
+  const cur = SCENES[state.scene].id;
+  menu.innerHTML = screens.map(function (s) {
+    const on = s.id === cur;
+    return '<button class="menu-item" role="menuitemradio" type="button" data-scene="' + s.id + '" aria-checked="' + on + '" tabindex="-1">' + esc(s.label) + (on ? '<span class="menu-check" aria-hidden="true">✓</span>' : '') + '</button>';
+  }).join('');
+  menu.hidden = false;
+  menuFor = screens[0].group;
+  menuBtn = btn;
+  btn.setAttribute('aria-expanded', 'true');
+  // Under the tab on a desktop; above the bottom bar on a phone.
+  const r = btn.getBoundingClientRect();
+  menu.style.left = Math.max(8, Math.min(r.left, innerWidth - menu.offsetWidth - 8)) + 'px';
+  if (isPhone()) { menu.style.top = ''; menu.style.bottom = (innerHeight - r.top + 8) + 'px'; }
+  else { menu.style.bottom = ''; menu.style.top = (r.bottom + 6) + 'px'; }
+  const first = menu.querySelector('[aria-checked="true"]') || menu.querySelector('.menu-item');
+  if (first) first.focus();
+}
+function closeMenu(focusBack) {
+  if (!menuFor) return;
+  $('metrics-menu').hidden = true;
+  if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+  if (focusBack && menuBtn) menuBtn.focus();
+  menuFor = null;
+}
+
 function setUpMembers() {
   const tabs = $('tabs');
-  const tabbed = SCENES.filter(function (s) { return !s.noTab; });
   const go = function (id) { showScene(sceneFrom(id), { fromUser: true }); };
-  // Desktop: one tab per screen.
-  tabs.innerHTML = tabbed.map(function (s) {
-    return '<button class="tab' + (s.locked ? ' needs-recruit' : '') + '" role="tab" id="tab-' + s.id + '" aria-controls="scene-' + s.id + '" type="button">' + esc(s.label) + '</button>';
+  const screensOf = function (g) { return SCENES.filter(function (s) { return s.group === g.id; }); };
+  const caret = function (g) { return g.menu ? '<span class="caret" aria-hidden="true">▾</span>' : ''; };
+  const popup = function (g) { return g.menu ? ' aria-haspopup="menu" aria-expanded="false"' : ''; };
+  // The same tabs twice: across the top on a desktop, in a bottom bar on a phone.
+  tabs.innerHTML = GROUPS.map(function (g) {
+    return '<button class="tab' + (g.locked ? ' needs-recruit' : '') + '" role="tab" id="tab-' + g.id + '" type="button"' + popup(g) + '>' + esc(g.wide || g.label) +
+      (g.menu ? '<span class="tab-sub" id="tab-sub-' + g.id + '"></span>' : '') + caret(g) + '</button>';
   }).join('');
-  tabbed.forEach(function (s) { $('tab-' + s.id).addEventListener('click', function () { go(s.id); }); });
-  tabs.addEventListener('keydown', function (e) {
-    const at = tabbed.indexOf(SCENES[state.scene]);
-    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabbed.length - 1 }[e.key];
-    if (to == null || at < 0) return;
-    e.preventDefault();
-    const next = tabbed[(to + tabbed.length) % tabbed.length];
-    go(next.id);
-    $('tab-' + next.id).focus();
-  });
-  // Phone: three tabs; each opens the screen you last had open in it.
   $('gtabs').innerHTML = GROUPS.map(function (g) {
-    return '<button class="gtab' + (g.locked ? ' needs-recruit' : '') + '" role="tab" id="gtab-' + g.id + '" type="button"><svg viewBox="0 0 24 24" aria-hidden="true">' + g.icon + '</svg>' + esc(g.label) + '</button>';
+    return '<button class="gtab' + (g.locked ? ' needs-recruit' : '') + '" role="tab" id="gtab-' + g.id + '" type="button"' + popup(g) + '><svg viewBox="0 0 24 24" aria-hidden="true">' + g.icon + '</svg>' + esc(g.label) + caret(g) + '</button>';
   }).join('');
   GROUPS.forEach(function (g) {
-    $('gtab-' + g.id).addEventListener('click', function () {
-      const first = SCENES.filter(function (s) { return s.group === g.id; })[0].id;
-      go(g.stack ? first : lastInGroup[g.id] || first);
-    });
+    const open = function (e) {
+      if (!g.menu) return go(screensOf(g)[0].id);
+      if (menuFor === g.id) return closeMenu(true);
+      openMenu(screensOf(g), e.currentTarget);
+    };
+    $('tab-' + g.id).addEventListener('click', open);
+    $('gtab-' + g.id).addEventListener('click', open);
   });
-  $('subtabs').addEventListener('click', function (e) {
+  tabs.addEventListener('keydown', function (e) {
+    const shown = GROUPS.filter(function (g) { return $('tab-' + g.id).offsetParent !== null; });
+    const at = shown.indexOf(groupOf(e.target.id.replace('tab-', '')));
+    if (at < 0) return;
+    if (e.key === 'ArrowDown' && shown[at].menu) { e.preventDefault(); return openMenu(screensOf(shown[at]), e.target); }
+    const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: shown.length - 1 }[e.key];
+    if (to == null) return;
+    e.preventDefault();
+    $('tab-' + shown[(to + shown.length) % shown.length].id).focus();
+  });
+  // The Metrics menu: pick a screen, or tap anywhere else to close it.
+  const menu = $('metrics-menu');
+  menu.addEventListener('click', function (e) {
     const b = e.target.closest ? e.target.closest('[data-scene]') : null;
-    if (b) go(b.getAttribute('data-scene'));
+    if (b) { const btn = menuBtn; go(b.getAttribute('data-scene')); if (btn && btn.offsetParent !== null) btn.focus(); }
   });
+  menu.addEventListener('keydown', function (e) {
+    const items = Array.prototype.slice.call(menu.querySelectorAll('.menu-item'));
+    const at = items.indexOf(document.activeElement);
+    const to = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: items.length - 1 }[e.key];
+    if (e.key === 'Tab') return closeMenu();
+    if (to == null) return;
+    e.preventDefault();
+    items[(to + items.length) % items.length].focus();
+  });
+  document.addEventListener('click', function (e) {
+    if (menuFor && !menu.contains(e.target) && !(e.target.closest && e.target.closest('[aria-haspopup="menu"]'))) closeMenu();
+  });
+  addEventListener('resize', function () { closeMenu(); });
   // Tap (or Enter / Space on) a calendar event to see its details.
   const eventFrom = function (target) {
     const el = target.closest ? target.closest('#scene-week [data-ev]') : null;
@@ -1199,7 +1247,7 @@ function setUpMembers() {
     if (hit && hit.event) openEvent(hit.event, hit.el);
   });
   addEventListener('keydown', function (ev) {
-    if (ev.key === 'Escape') return closeEvent();
+    if (ev.key === 'Escape') { if (menuFor) return closeMenu(true); return closeEvent(); }
     if (ev.key !== 'Enter' && ev.key !== ' ') return;
     const hit = eventFrom(ev.target);
     if (hit && hit.event && ev.target === hit.el) { ev.preventDefault(); openEvent(hit.event, hit.el); }
