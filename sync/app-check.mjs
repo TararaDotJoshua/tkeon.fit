@@ -45,9 +45,16 @@ const watch = (page, name) => {
 const sheet = (page) => page.locator('.sheet-back').last();
 const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${name}.png`) });
 const noSideScroll = async (page, what) => ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${what}: no sideways page scroll`);
-// Phone navigation: four bottom tabs (five with Recruit); Goals and Board share the Goals tab behind a switch.
-const toGoals = async (page) => { await page.locator('#gtab-goals').click(); await page.locator('.subtab[data-scene="goals"]').click(); };
-const toBoard = async (page) => { await page.locator('#gtab-goals').click(); await page.locator('.subtab[data-scene="board"]').click(); };
+// Navigation: Metrics, This week, Quick (and Recruit). Metrics opens a menu of
+// Scoreboard, Required & bonus, Goals and Board. Works on a phone or a desktop.
+const metrics = async (page, scene) => {
+  const tab = page.locator('#gtab-metrics:visible, #tab-metrics:visible').first();
+  await tab.click();
+  await page.locator(`#metrics-menu [data-scene="${scene}"]`).click();
+  await page.locator(`#scene-${scene}`).waitFor();
+};
+const toGoals = (page) => metrics(page, 'goals');
+const toBoard = (page) => metrics(page, 'board');
 const toSettings = async (page) => { await page.locator('#account .acct-btn').click(); await page.locator('#scene-settings .set-card').first().waitFor(); };
 const closeSheets = async (page) => { while (await page.locator('.sheet-back').count()) await page.locator('.sheet-back').last().locator('[data-sheet="close"]').click(); };
 const toastGone = (page) => page.locator('.toast').waitFor({ state: 'detached', timeout: 6000 }).catch(() => {});
@@ -70,18 +77,28 @@ async function main() {
   // ---- Visitor on a phone -------------------------------------------------
   await page.goto(BASE + '#goals');
   await page.locator('#scene-goals .app-head').waitFor();
-  ok((await page.locator('#gtabs .gtab:visible').allInnerTexts()).map((t) => t.trim()).join() === 'KRA,This week,Goals,Quick', 'phone: four bottom tabs for a visitor: KRA, This week, Goals, Quick');
+  ok((await page.locator('#gtabs .gtab:visible').allInnerTexts()).map((t) => t.replace('▾', '').trim()).join() === 'Metrics,This week,Quick', 'phone: three bottom tabs for a visitor: Metrics, This week, Quick');
   ok(await page.locator('#gtabs').evaluate((el) => getComputedStyle(el).position === 'fixed' && el.getBoundingClientRect().bottom >= innerHeight - 1), 'phone: the tabs are a bar fixed to the bottom');
   ok(await page.locator('.gtab svg').first().isVisible() && !(await page.locator('#tabs').isVisible()), 'phone: tabs have icons, and the desktop tab row is hidden');
-  ok((await page.locator('#subtabs .subtab').allInnerTexts()).join() === 'Goals,Board' && await page.locator('#gtab-goals').getAttribute('aria-selected') === 'true', 'phone: the Goals tab has a Goals | Board switch');
-  await page.locator('#gtab-kra').click();
-  ok(await page.locator('#scene-kras').isVisible() && await page.locator('#scene-required').isVisible() && await page.locator('#subtabs .subtab').count() === 0, 'phone: the KRA tab shows the scoreboard with required & bonus under it');
-  ok(await page.evaluate(() => document.getElementById('scene-required').getBoundingClientRect().top > document.getElementById('scene-kras').getBoundingClientRect().bottom - 1), 'phone: required & bonus sits below the scoreboard');
-  await noSideScroll(page, 'KRA tab');
+  ok(await page.locator('#gtab-metrics').getAttribute('aria-selected') === 'true', 'phone: Goals sits under the Metrics tab');
+  await page.locator('#gtab-metrics').click();
+  const menu = page.locator('#metrics-menu');
+  ok(await menu.isVisible() && (await menu.locator('.menu-item').allInnerTexts()).map((t) => t.replace('✓', '').trim()).join() === 'Scoreboard,Required & bonus,Goals,Board', 'phone: the Metrics tab opens a menu: Scoreboard, Required & bonus, Goals, Board');
+  ok(await menu.locator('[aria-checked="true"]').innerText().then((t) => /Goals/.test(t)), 'phone: the menu ticks the screen you are on');
+  ok(await menu.evaluate((el) => { const r = el.getBoundingClientRect(), bar = document.getElementById('gtabs').getBoundingClientRect(); return r.bottom <= bar.top + 1 && r.left >= 0 && r.right <= innerWidth; }), 'phone: the menu opens above the bottom bar, on screen');
+  await shot(page, 'phone-metrics-menu');
+  await page.locator('#scene-goals .app-head').click();
+  ok(!(await menu.isVisible()) && await page.locator('#scene-goals').isVisible(), 'phone: tapping elsewhere closes the menu without changing screen');
+  await metrics(page, 'kras');
+  ok(await page.locator('#scene-kras').isVisible() && !(await page.locator('#scene-required').isVisible()) && !(await menu.isVisible()), 'phone: picking Scoreboard shows just the scoreboard');
+  ok(await page.locator('#ranks-m .rk').isVisible(), 'phone: rankings show with the scoreboard');
+  await noSideScroll(page, 'Scoreboard');
   await shot(page, 'phone-kra-tab');
-  await page.locator('#gtab-week').click();
-  await page.locator('#gtab-kra').click();
-  ok(await page.locator('#ranks-m .rk').isVisible(), 'phone: rankings show in the KRA tab');
+  await metrics(page, 'required');
+  ok(await page.locator('#scene-required').isVisible() && !(await page.locator('#scene-kras').isVisible()) && await page.locator('#ranks-m .rk').isVisible(), 'phone: Required & bonus is its own screen, with the rankings');
+  await page.locator('#gtab-metrics').click();
+  await page.keyboard.press('Escape');
+  ok(!(await menu.isVisible()), 'the menu closes with Escape');
   await page.locator('#gtab-week').click();
   ok(await page.locator('#scene-week').isVisible() && !(await page.locator('#scene-kras').isVisible()), 'phone: This week is its own tab');
   ok(!(await page.locator('#ranks-m').isVisible()), 'phone: no rankings on This week');
@@ -102,13 +119,13 @@ async function main() {
   await pop.waitFor();
   await page.keyboard.press('Escape');
   ok(await page.locator('#event-pop').count() === 0, 'events open with Enter and close with Escape');
-  await page.locator('#gtab-goals').click();
-  ok(await page.locator('#scene-goals').isVisible(), 'phone: the Goals tab reopens on the screen you left it on');
+  await toGoals(page);
+  ok(await page.locator('#scene-goals').isVisible() && await page.locator('#gtab-metrics').getAttribute('aria-selected') === 'true', 'phone: Metrics › Goals opens the goals');
   ok(!(await page.locator('#ranks-m').isVisible()), 'phone: no rankings on Goals');
   ok(await page.locator('#account [data-act="signin"]').isVisible(), 'visitor sees a Sign in button');
   ok(await page.locator('#scene-goals .app-head h2').innerText() === 'Goals' && await page.locator('#scene-goals .goal-list, #scene-goals .app-note').count() === 1, 'visitor sees the goals list (or the empty note)');
   await noSideScroll(page, 'goals (visitor)');
-  await page.locator('.subtab[data-scene="board"]').click();
+  await toBoard(page);
   await page.locator('#scene-board .col').first().waitFor();
   ok(await page.locator('#scene-board .col').count() === 4, 'board shows the four starting columns');
   ok(await page.locator('#scene-board .col-add').count() === 0, 'visitor gets no "add an issue" buttons');
@@ -294,7 +311,17 @@ async function main() {
   await dcard.waitFor();
   ok(await dp.locator('.col').evaluateAll((els) => els.every((el) => el.getBoundingClientRect().right <= innerWidth)), 'desktop: all columns fit side by side');
   ok(await dp.locator('#ranks-m .rk').isVisible(), 'desktop: rankings still show on every screen');
-  ok(await dp.locator('#tabs .tab:not(.needs-recruit)').count() === 6 && await dp.locator('#tabs').evaluate((el) => getComputedStyle(el).position !== 'fixed') && !(await dp.locator('#gtabs').isVisible()), 'desktop: six tabs across the top, no bottom bar');
+  ok(await dp.locator('#tabs .tab:not(.needs-recruit)').count() === 3 && await dp.locator('#tabs').evaluate((el) => getComputedStyle(el).position !== 'fixed') && !(await dp.locator('#gtabs').isVisible()), 'desktop: three tabs across the top (Metrics, This week, Quick access), no bottom bar');
+  ok(/Metrics · Board/.test(await dp.locator('#tab-metrics').innerText()), 'desktop: the Metrics tab names the screen it shows');
+  await dp.locator('#tab-metrics').click();
+  ok(await dp.locator('#metrics-menu').evaluate((el) => el.getBoundingClientRect().top >= document.getElementById('tab-metrics').getBoundingClientRect().bottom - 1), 'desktop: the menu drops down under the tab');
+  await shot(dp, 'desktop-metrics-menu');
+  await dp.keyboard.press('ArrowDown');
+  await dp.keyboard.press('Enter');
+  await dp.locator('#scene-goals').waitFor({ state: 'hidden' }).catch(() => {});
+  ok(await dp.locator('#metrics-menu').isHidden(), 'desktop: the menu works from the keyboard');
+  await dp.goto(BASE + '#board');
+  await dcard.waitFor();
   await dcard.scrollIntoViewIfNeeded();
   const from = await dcard.boundingBox(), to = await dp.locator('.col[aria-label="Done"] .col-list').boundingBox();
   await dp.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
