@@ -446,6 +446,7 @@
     <section class="scene" id="scene-week" role="tabpanel" aria-labelledby="tab-week"></section>
     <section class="scene" id="scene-goals" role="tabpanel" aria-labelledby="tab-goals" hidden><p class="empty">Loading…</p></section>
     <section class="scene" id="scene-board" role="tabpanel" aria-labelledby="tab-board" hidden><p class="empty">Loading…</p></section>
+    <section class="scene" id="scene-quick" role="tabpanel" aria-labelledby="tab-quick" hidden><p class="empty">Loading…</p></section>
     <section class="scene" id="scene-recruit" role="tabpanel" aria-labelledby="tab-recruit" hidden><p class="empty">Loading…</p></section>
     <section class="scene" id="scene-settings" aria-label="Settings" hidden><p class="empty">Loading…</p></section>
   </main>
@@ -491,9 +492,11 @@ const GROUPS = [
 if (!TV && !SAMPLE) {
   SCENES.push({ id: 'goals', label: 'Goals', group: 'goals', app: true });
   SCENES.push({ id: 'board', label: 'Board', group: 'goals', app: true });
+  SCENES.push({ id: 'quick', label: 'Quick access', group: 'quick', app: true }); // org chart, study hours
   SCENES.push({ id: 'recruit', label: 'Recruitment', group: 'recruit', app: true, locked: true }); // only for brothers an admin let in
   SCENES.push({ id: 'settings', label: 'Settings', app: true, noTab: true }); // opened from the profile photo
   GROUPS.push({ id: 'goals', label: 'Goals', icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>' });
+  GROUPS.push({ id: 'quick', label: 'Quick', icon: '<path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z"/>' });
   GROUPS.push({ id: 'recruit', label: 'Recruit', locked: true, icon: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18.5 14.8c1.7.8 2.7 2.5 3 5.2"/>' });
 }
 const isPhone = function () { return !TV && window.matchMedia && matchMedia('(max-width: 700px)').matches; };

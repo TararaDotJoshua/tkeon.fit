@@ -208,3 +208,53 @@ button.rowi { width: 100%; border: 0; border-bottom: 1px solid var(--line); back
 .qr { width: min(78vw, 20rem); margin: 0.5rem auto 0.8rem; padding: 0.6rem; background: #fff; border-radius: 0.8rem; }
 .qr svg { display: block; width: 100%; height: auto; }
 .qr-url { font-weight: 900; font-size: 1.3rem; margin: 0 0 0.4rem; }
+
+/* ---------- Quick access ---------- */
+#scene-quick { max-width: 52rem; }
+.quick-grid { display: grid; grid-template-columns: minmax(0, 1fr); grid-gap: 0.75rem; }
+@media (min-width: 640px) { .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.qtile { -webkit-appearance: none; appearance: none; display: flex; align-items: center; gap: 0.9rem; width: 100%; min-height: 5.5rem; padding: 1rem 1rem; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.qtile:focus-visible { outline: 2px solid var(--cherry); outline-offset: 2px; }
+.qico { display: flex; align-items: center; justify-content: center; flex: none; width: 3.2rem; height: 3.2rem; border-radius: 0.8rem; background: var(--cherry); color: #fff; }
+.qico svg { width: 1.7rem; height: 1.7rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.qtext { flex: 1 1 auto; min-width: 0; }
+.qtitle { display: block; font-weight: 900; font-size: 1.15rem; line-height: 1.2; }
+.qsub { display: block; margin-top: 0.2rem; color: var(--muted); font-size: 0.875rem; }
+.qsub b { font-weight: 700; }
+.q-live { color: var(--cherry); font-variant-numeric: tabular-nums; }
+.qtile .chev { flex: none; color: var(--faint); font-size: 1.4rem; }
+
+/* Org chart */
+.org { padding-bottom: 0.5rem; }
+.oc-tier { position: relative; }
+.oc-tier + .oc-tier { margin-top: 1.4rem; }
+.oc-top { display: flex; justify-content: center; }
+.oc-top + .oc-tier::before { content: ""; position: absolute; left: 50%; top: -1.4rem; height: 1.4rem; border-left: 2px solid var(--line); }
+.oc-label { text-align: center; margin-bottom: 0.55rem; }
+.oc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-gap: 0.55rem; }
+.oc-card { min-width: 0; padding: 0.7rem 0.75rem 0.75rem; border: 1px solid var(--line); border-top: 3px solid var(--cherry); border-radius: 0.7rem; background: var(--panel); }
+.oc-card.is-open { border-top-color: var(--line); }
+.oc-head { width: 100%; max-width: 17rem; text-align: center; padding: 0.9rem 1rem 1rem; }
+.oc-title { font-weight: 900; font-size: 0.95rem; line-height: 1.2; word-wrap: break-word; }
+.oc-head .oc-title { font-size: 1.15rem; }
+.oc-role { color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 0.1rem; }
+.oc-people { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.55rem; }
+.oc-head .oc-people { align-items: center; }
+.oc-person { display: flex; align-items: center; gap: 0.45rem; min-width: 0; font-size: 0.875rem; font-weight: 700; }
+.oc-head .oc-person { flex-direction: column; gap: 0.35rem; font-size: 1rem; }
+.oc-name { min-width: 0; word-wrap: break-word; }
+.oc-yr { color: var(--muted); font-weight: 400; }
+.oc-open { color: var(--muted); font-size: 0.85rem; font-style: italic; }
+.oc-note { margin-top: 1.2rem; }
+
+/* Study hours */
+.st-totals { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 0.6rem; margin-bottom: 0.9rem; }
+.st-box { padding: 0.8rem 0.9rem; }
+.st-box b { display: block; margin-top: 0.15rem; font-size: 1.9rem; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.st-timer { text-align: center; }
+.st-timer p { margin: 0.5rem 0 0; }
+.st-timer .btn-row { justify-content: center; }
+.st-clock { font-size: 2.6rem; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--cherry); }
+.st-chapter .rowi { min-height: 46px; }
+.st-num { display: flex; flex-direction: column; align-items: flex-end; flex: none; min-width: 3.4rem; font-size: 0.8rem; line-height: 1.15; }
+.st-num b { font-size: 0.95rem; font-weight: 900; font-variant-numeric: tabular-nums; }

@@ -12,7 +12,7 @@ const row = (attrs, title, sub, lead = '') => `<li><button class="rowi" type="bu
 /** The admin entries, as list rows. Settings shows them; a click anywhere inside goes through manageClick(). */
 export const manageRows = () => `<ul class="rows">
   ${row('data-go="members"', 'Members', 'Positions, admins, resetting accounts')}
-  ${row('data-go="teams"', 'Positions and committees', 'What issues and goals can be assigned to')}
+  ${row('data-go="teams"', 'Positions and committees', 'What issues and goals can be assigned to, and the org chart')}
   ${row('data-go="columns"', 'Board columns', 'Add, rename, reorder')}
   ${row('data-go="fields"', 'Custom fields', 'Extra fields on every issue')}
   ${row('data-go="archive"', 'Archived items', 'Restore goals and issues')}
@@ -105,21 +105,27 @@ async function nudge(table, list, id, dir) {
 const mover = (id, n, len) => `<span><button class="btn quiet small" type="button" data-up="${id}" aria-label="Move up"${n === 0 ? ' disabled' : ''}>↑</button><button class="btn quiet small" type="button" data-down="${id}" aria-label="Move down"${n === len - 1 ? ' disabled' : ''}>↓</button></span>`;
 const editRow = (id, title, sub, n, len) => `<li class="rowi"><span class="rowi-main"><span class="rowi-title">${title}</span>${sub ? `<span class="rowi-sub">${sub}</span>` : ''}</span>${mover(id, n, len)}<button class="btn small" type="button" data-edit="${id}">Edit</button></li>`;
 
+const CHART = [['head', 'Top (the chapter president)'], ['exec', 'Executive board'], ['chair', 'Chairmen']];
+const chartLabel = (v) => ({ head: 'Top', exec: 'Executive board' })[v] || 'Chairmen';
+
 function openTeams() {
   const live = () => S.teams.filter((t) => !t.archived_at);
   listSheet('Positions and committees', () => {
-    const block = (kind, label) => { const l = live().filter((t) => t.kind === kind); return `<div class="fsec plain"><h3>${label}</h3><ul class="rows">${l.map((t, n) => editRow(t.id, esc(t.name), '', n, l.length)).join('') || '<li class="muted small-text">None yet.</li>'}</ul><div class="btn-row"><button class="btn small" type="button" data-new="${kind}">+ Add a ${kind}</button></div></div>`; };
+    const block = (kind, label) => { const l = live().filter((t) => t.kind === kind); return `<div class="fsec plain"><h3>${label}</h3><ul class="rows">${l.map((t, n) => editRow(t.id, esc(t.name), kind === 'position' ? `Org chart: ${chartLabel(t.chart)}` : '', n, l.length)).join('') || '<li class="muted small-text">None yet.</li>'}</ul><div class="btn-row"><button class="btn small" type="button" data-new="${kind}">+ Add a ${kind}</button></div></div>`; };
     return block('position', 'Positions') + block('committee', 'Committees');
   }, async (e, redraw) => {
     const up = e.target.closest('[data-up]')?.dataset.up, down = e.target.closest('[data-down]')?.dataset.down;
     if (up || down) { const t = S.teams.find((x) => x.id === (up || down)); await nudge('teams', live().filter((x) => x.kind === t.kind), t.id, up ? -1 : 1); return redraw(); }
     const kind = e.target.closest('[data-new]')?.dataset.new, edit = e.target.closest('[data-edit]')?.dataset.edit;
     if (!kind && !edit) return;
-    const t = edit ? S.teams.find((x) => x.id === edit) : { kind, name: '' };
-    simpleForm(edit ? `Edit ${t.kind}` : `New ${kind}`, field('Name', `<input class="input" name="name" maxlength="80" value="${esc(t.name)}" required>`), async (f) => {
+    const t = edit ? S.teams.find((x) => x.id === edit) : { kind, name: '', chart: 'chair' };
+    const isPos = t.kind === 'position';
+    const chartField = isPos ? field('Where it sits on the org chart', `<select class="input" name="chart">${CHART.map(([v, l]) => opt(v, l, t.chart || 'chair')).join('')}</select>`) : '';
+    simpleForm(edit ? `Edit ${t.kind}` : `New ${kind}`, field('Name', `<input class="input" name="name" maxlength="80" value="${esc(t.name)}" required>`) + chartField, async (f) => {
       if (!f.name) throw new Error('Enter a name.');
-      if (edit) await write(sb.from('teams').update({ name: f.name }).eq('id', edit));
-      else await write(sb.from('teams').insert({ kind, name: f.name, sort: Math.max(0, ...live().map((x) => x.sort)) + 10 }));
+      const chart = isPos ? { chart: f.chart || 'chair' } : {};
+      if (edit) await write(sb.from('teams').update({ name: f.name, ...chart }).eq('id', edit));
+      else await write(sb.from('teams').insert({ kind, name: f.name, sort: Math.max(0, ...live().map((x) => x.sort)) + 10, ...chart }));
     }, redraw, edit ? async () => { await write(sb.from('teams').update({ archived_at: new Date().toISOString() }).eq('id', edit)); } : null, 'It stays on old issues and goals but can no longer be picked.');
   });
 }
