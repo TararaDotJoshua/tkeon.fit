@@ -45,7 +45,7 @@ const watch = (page, name) => {
 const sheet = (page) => page.locator('.sheet-back').last();
 const shot = (page, name) => page.screenshot({ path: path.join(OUT, `${name}.png`) });
 const noSideScroll = async (page, what) => ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${what}: no sideways page scroll`);
-// Phone navigation: three bottom tabs; Goals and Board share the Goals tab behind a switch.
+// Phone navigation: four bottom tabs (five with Recruit); Goals and Board share the Goals tab behind a switch.
 const toGoals = async (page) => { await page.locator('#gtab-goals').click(); await page.locator('.subtab[data-scene="goals"]').click(); };
 const toBoard = async (page) => { await page.locator('#gtab-goals').click(); await page.locator('.subtab[data-scene="board"]').click(); };
 const toSettings = async (page) => { await page.locator('#account .acct-btn').click(); await page.locator('#scene-settings .set-card').first().waitFor(); };
@@ -70,7 +70,7 @@ async function main() {
   // ---- Visitor on a phone -------------------------------------------------
   await page.goto(BASE + '#goals');
   await page.locator('#scene-goals .app-head').waitFor();
-  ok((await page.locator('#gtabs .gtab:visible').allInnerTexts()).map((t) => t.trim()).join() === 'KRA,This week,Goals', 'phone: three bottom tabs for a visitor: KRA, This week, Goals');
+  ok((await page.locator('#gtabs .gtab:visible').allInnerTexts()).map((t) => t.trim()).join() === 'KRA,This week,Goals,Quick', 'phone: four bottom tabs for a visitor: KRA, This week, Goals, Quick');
   ok(await page.locator('#gtabs').evaluate((el) => getComputedStyle(el).position === 'fixed' && el.getBoundingClientRect().bottom >= innerHeight - 1), 'phone: the tabs are a bar fixed to the bottom');
   ok(await page.locator('.gtab svg').first().isVisible() && !(await page.locator('#tabs').isVisible()), 'phone: tabs have icons, and the desktop tab row is hidden');
   ok((await page.locator('#subtabs .subtab').allInnerTexts()).join() === 'Goals,Board' && await page.locator('#gtab-goals').getAttribute('aria-selected') === 'true', 'phone: the Goals tab has a Goals | Board switch');
@@ -294,13 +294,16 @@ async function main() {
   await dcard.waitFor();
   ok(await dp.locator('.col').evaluateAll((els) => els.every((el) => el.getBoundingClientRect().right <= innerWidth)), 'desktop: all columns fit side by side');
   ok(await dp.locator('#ranks-m .rk').isVisible(), 'desktop: rankings still show on every screen');
-  ok(await dp.locator('#tabs .tab:not(.needs-recruit)').count() === 5 && await dp.locator('#tabs').evaluate((el) => getComputedStyle(el).position !== 'fixed') && !(await dp.locator('#gtabs').isVisible()), 'desktop: five tabs across the top, no bottom bar');
+  ok(await dp.locator('#tabs .tab:not(.needs-recruit)').count() === 6 && await dp.locator('#tabs').evaluate((el) => getComputedStyle(el).position !== 'fixed') && !(await dp.locator('#gtabs').isVisible()), 'desktop: six tabs across the top, no bottom bar');
   await dcard.scrollIntoViewIfNeeded();
   const from = await dcard.boundingBox(), to = await dp.locator('.col[aria-label="Done"] .col-list').boundingBox();
   await dp.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
   await dp.mouse.down();
   await dp.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 12, { steps: 4 });
-  await dp.mouse.move(to.x + to.width / 2, to.y + 24, { steps: 14 });
+  // Aim inside the part of the Done column that's on screen: after scrolling to the card,
+  // the top of a short column can be above the window.
+  const dropY = Math.min(Math.max(to.y + 24, 60), to.y + to.height - 12);
+  await dp.mouse.move(to.x + to.width / 2, dropY, { steps: 14 });
   await dp.mouse.up();
   await dp.locator('.col[aria-label="Done"] .icard', { hasText: 'E2E Book venue' }).waitFor({ timeout: 8000 }).catch(() => {});
   await dp.waitForTimeout(600);
@@ -456,6 +459,75 @@ async function main() {
   ok(/With Blake Member/.test(await p2.locator('.pcard', { hasText: 'Riley Prospect' }).innerText()), 'Blake now sees Riley, assigned to him');
   await p2.locator('.pill[data-filter="mine"]').click();
   ok(await p2.locator('.pcard').count() === 1, 'the "Mine" filter shows only his PNMs');
+
+  // ---- Quick access: org chart and study hours --------------------------------------
+  // A visitor sees the org chart, and is asked to sign in for study hours.
+  const vis = await (await browser.newContext({ ...devices['iPhone 14'] })).newPage();
+  watch(vis, 'visitor quick');
+  await vis.goto(BASE + '#quick');
+  await vis.locator('#scene-quick [data-quick="org"]').waitFor();
+  ok(await vis.locator('#gtab-quick').isVisible() && /Sign in/.test(await vis.locator('[data-quick="study"]').innerText()), 'quick access: a visitor sees the tab, and study hours asks him to sign in');
+  await vis.locator('[data-quick="org"]').click();
+  ok(/Prytanis/.test(await sheet(vis).locator('.oc-top').innerText()), 'org chart: the top position sits at the top');
+  ok(await sheet(vis).locator('.oc-card', { hasText: 'Rush Chairman' }).locator('.oc-name', { hasText: 'Blake Member' }).count() === 1, 'org chart: shows who holds each position, from Settings');
+  await noSideScroll(vis, 'org chart');
+  await shot(vis, 'phone-org-chart');
+  await sheet(vis).locator('[data-sheet="close"]').click();
+  await vis.locator('[data-quick="study"]').click();
+  ok(await sheet(vis).locator('[name="scroll"]').count() === 1, 'study hours: a visitor is sent to sign in first');
+  await vis.context().close();
+
+  // Blake times a study session, closes the app, and logs it.
+  await p2.locator('#gtab-quick').click();
+  await p2.locator('[data-quick="study"]').click();
+  await sheet(p2).locator('[data-st="start"]').click();
+  await p2.reload();
+  await p2.locator('#scene-quick .q-live').waitFor();
+  ok(/Timer running/.test(await p2.locator('[data-quick="study"]').innerText()), 'study timer: keeps running after the app is closed and reopened');
+  await p2.locator('[data-quick="study"]').click();
+  await sheet(p2).locator('[data-st="stop"]').click();
+  ok(Number(await sheet(p2).locator('[name="hours"]').inputValue()) > 0, 'study timer: stopping it fills in the hours');
+  await sheet(p2).locator('[name="hours"]').fill('1.5');
+  await sheet(p2).locator('[name="place"]').fill('Evans Library');
+  await sheet(p2).locator('[data-sheet="primary"]').click();
+  await sheet(p2).locator('.rowi', { hasText: '1.5 h' }).waitFor();
+  ok(/1\.5 h/.test(await sheet(p2).locator('.st-totals').innerText()) && await sheet(p2).locator('[data-st="start"]').count() === 1, 'study hours: saving logs it, adds it to his totals and clears the timer');
+  await sheet(p2).locator('[name="hours"]').fill('30');
+  await sheet(p2).locator('[data-sheet="primary"]').click();
+  ok(/hours you studied/.test(await sheet(p2).locator('.form-error').innerText()), 'study hours: more than 24 in one go is caught');
+  ok(await sheet(p2).locator('.st-chapter').count() === 0, 'study hours: a regular brother sees only his own');
+  await shot(p2, 'phone-study-hours');
+  await sheet(p2).locator('[data-sheet="close"]').click();
+  ok(/This week 1\.5 h/.test(await p2.locator('[data-quick="study"]').innerText()), 'quick access: the tile shows his week');
+  await noSideScroll(p2, 'Quick access');
+
+  // The admin sees the whole chapter, and can move a position on the chart.
+  await page.locator('#gtab-quick').click();
+  await page.locator('[data-quick="study"]').click();
+  await sheet(page).locator('.st-chapter').waitFor();
+  ok(/Blake Member[\s\S]*1\.5 h/.test(await sheet(page).locator('.st-chapter').innerText()), 'study hours: an admin sees every brother\'s hours');
+  await shot(page, 'phone-study-admin');
+  await closeSheets(page);
+  await toSettings(page);
+  await page.locator('#scene-settings [data-go="teams"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Rush Chairman' }).locator('[data-edit]').click();
+  await sheet(page).locator('[name="chart"]').selectOption('exec');
+  await sheet(page).locator('[data-sheet="primary"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Rush Chairman' }).filter({ hasText: 'Executive board' }).waitFor();
+  await closeSheets(page);
+  // A link straight to the org chart opens it.
+  await page.goto('about:blank');
+  await page.goto(BASE + '#quick/org');
+  await sheet(page).locator('.org').waitFor();
+  ok(await sheet(page).locator('.oc-tier', { hasText: 'Executive board' }).locator('.oc-card', { hasText: 'Rush Chairman' }).count() === 1, 'org chart: an admin can move a position to the executive board');
+  await closeSheets(page);
+  await toSettings(page);
+  await page.locator('#scene-settings [data-go="teams"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Rush Chairman' }).locator('[data-edit]').click();
+  await sheet(page).locator('[name="chart"]').selectOption('chair');
+  await sheet(page).locator('[data-sheet="primary"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Rush Chairman' }).filter({ hasText: 'Chairmen' }).waitFor();
+  await closeSheets(page);
 
   await browser.close();
   ok(errors.length === 0, 'no script errors in any browser', errors.join('\n        '));

@@ -7,18 +7,25 @@ import { openGoal, renderGoals } from './goals.js';
 import { openIssue, renderBoard } from './board.js';
 import { renderSettings } from './settings.js';
 import { canRecruit, loadRecruit, openPnm, renderRecruit, resetRecruit } from './recruit.js';
+import { loadStudy, openOrgChart, openStudy, renderQuick, resetStudy } from './quick.js';
+import { asMember } from './auth.js';
 
 const D = window.DASH;
 
 let recruitFor = null; // whose recruitment data is loaded
+let studyFor = null;   // whose study hours are loaded
 function render() {
   renderAccount();
   D.setRecruit(canRecruit());
   // Load or drop recruitment data when who's signed in (or their access) changes.
   const who = canRecruit() ? S.user.id : null;
   if (who !== recruitFor) { recruitFor = who; resetRecruit(); if (who) loadRecruit(); }
+  // Study hours belong to whoever is signed in; drop them when that changes.
+  const me = S.profile && !S.profile.disabled ? S.user.id : null;
+  if (me !== studyFor) { studyFor = me; resetStudy(); }
   const scene = D.scene();
   if (scene === 'recruit') renderRecruit();
+  if (scene === 'quick') renderQuick();
   if (scene === 'goals') renderGoals();
   if (scene === 'board') renderBoard();
   if (scene === 'settings') renderSettings();
@@ -30,6 +37,7 @@ document.addEventListener('dash:scene', render);
 let recruitFetched = 0;
 document.addEventListener('dash:scene', (e) => {
   if (e.detail === 'recruit' && canRecruit() && Date.now() - recruitFetched > 10e3) { recruitFetched = Date.now(); loadRecruit(); }
+  if (e.detail === 'quick' && studyFor) loadStudy(); // hours logged on another device show up
 });
 document.addEventListener('dash:data', () => { if (D.scene() === 'goals') renderGoals(); }); // goals that follow a KRA
 
@@ -43,6 +51,8 @@ function openDeepLink() {
   if (scene === 'goals') openGoal(id);
   if (scene === 'board') openIssue(id);
   if (scene === 'recruit' && canRecruit()) loadRecruit().then(() => openPnm(id));
+  if (scene === 'quick' && id === 'org') openOrgChart();
+  if (scene === 'quick' && id === 'study') asMember(openStudy);
 }
 onChange(openDeepLink);
 

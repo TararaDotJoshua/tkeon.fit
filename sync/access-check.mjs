@@ -243,6 +243,45 @@ async function main() {
     ok(!purged.error && purged.data >= 1 && data.length === 1 && data[0].id === young.id, 'a PNM entered over a year ago is deleted; one entered 364 days ago stays'); }
   ok(/pnm-retention/.test(sql("select jobname from cron.job where jobname = 'pnm-retention'")), 'the deletion is scheduled to run daily');
 
+  // ---- Quick access: study hours and the org chart ---------------------------------
+  // The server's current_date is UTC, so test dates are UTC days.
+  const utcDay = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
+  const other = await signUp('study.test@fit.edu', 9008);
+  allowed(other.res, 'a second member signs up for the study-hours checks');
+  const studier = member, peer = other.c;
+  refused(await anon.from('study_hours').select('*'), 'visitor cannot read study hours');
+  refused(await anon.from('study_hours').insert({ minutes: 60 }).select(), 'visitor cannot log study hours');
+  const logged = await studier.from('study_hours').insert({ day: utcDay(0), minutes: 90, place: 'Evans Library', note: `${TAG} calc` }).select().single();
+  allowed(logged, 'member logs his own study hours for today');
+  ok(logged.data?.profile_id === m1.id, 'study hours are filed under the member who logged them');
+  allowed(await studier.from('study_hours').insert({ day: utcDay(-29), minutes: 30 }).select().single(), 'member can log a day up to 30 days back');
+  refused(await studier.from('study_hours').insert({ profile_id: other.id, minutes: 60 }).select(), 'member cannot log hours for someone else');
+  refused(await studier.from('study_hours').insert({ day: utcDay(2), minutes: 60 }).select(), 'member cannot log hours for a future day');
+  refused(await studier.from('study_hours').insert({ day: utcDay(-40), minutes: 60 }).select(), 'member cannot log hours more than 30 days back');
+  refused(await studier.from('study_hours').insert({ minutes: 0 }).select(), 'zero minutes is refused');
+  refused(await studier.from('study_hours').insert({ minutes: 1500 }).select(), 'more than 24 hours in one entry is refused');
+  { const { data } = await studier.from('study_hours').select('*'); ok(data?.length === 2 && data.every((r) => r.profile_id === m1.id), 'member sees his own study hours'); }
+  { const { data } = await peer.from('study_hours').select('*'); ok(Array.isArray(data) && data.length === 0, 'another member cannot see his study hours'); }
+  refused(await peer.from('study_hours').update({ minutes: 600 }).eq('id', logged.data.id).select(), 'another member cannot change his study hours');
+  refused(await peer.from('study_hours').delete().eq('id', logged.data.id).select(), 'another member cannot delete his study hours');
+  refused(await studier.from('study_hours').update({ day: utcDay(3) }).eq('id', logged.data.id).select(), 'member cannot move an entry to a future day');
+  allowed(await studier.from('study_hours').update({ minutes: 120 }).eq('id', logged.data.id).select().single(), 'member can correct his own entry');
+  { const { data } = await adminUser.from('study_hours').select('*').eq('profile_id', m1.id); ok(data?.length === 2, 'an admin sees every brother\'s study hours'); }
+  allowed(await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: true }), 'admin turns the member off');
+  refused(await studier.from('study_hours').insert({ minutes: 60 }).select(), 'a turned-off account cannot log study hours');
+  { const { data } = await studier.from('study_hours').select('*'); ok(Array.isArray(data) && data.length === 0, 'a turned-off account cannot read study hours'); }
+  await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: false });
+  allowed(await studier.from('study_hours').delete().eq('id', logged.data.id).select().single(), 'member can delete his own entry');
+  ok(/^0$/.test(sql("select count(*) from pg_policies where tablename = 'study_hours' and 'anon' = any(roles)").trim()), 'no study-hours rule mentions visitors at all');
+
+  // Org chart placement lives on positions; only admins move them.
+  const pos = (await anon.from('teams').select('id, chart').eq('kind', 'position').order('sort').limit(1).single()).data;
+  ok(pos?.chart === 'head', 'the first position (Prytanis) sits at the top of the org chart');
+  refused(await studier.from('teams').update({ chart: 'chair' }).eq('id', pos.id).select(), 'member cannot move a position on the org chart');
+  refused(await adminUser.from('teams').update({ chart: 'boss' }).eq('id', pos.id).select(), 'an unknown org chart place is refused');
+  allowed(await adminUser.from('teams').update({ chart: 'exec' }).eq('id', pos.id).select().single(), 'admin can move a position on the org chart');
+  await adminUser.from('teams').update({ chart: 'head' }).eq('id', pos.id);
+
   await cleanup();
   console.log(`\n${passed}/${passed + failed} access checks passed.`);
   process.exitCode = failed ? 1 : 0;
