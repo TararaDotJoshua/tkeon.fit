@@ -32,6 +32,8 @@ async function cleanup() {
   await admin.from('issues').delete().or('title.like.E2E%,title.like.<img%');
   await admin.from('goals').delete().like('title', 'E2E%');
   await admin.from('custom_fields').delete().like('name', 'E2E%');
+  await admin.from('event_history').delete().like('title', 'E2E%'); // takes its check-ins with it
+  await admin.from('events').delete().like('title', 'E2E%');
   await admin.from('teams').delete().like('name', 'E2E%');
   const { data: pnms } = await admin.from('pnms').select('id, photo_path').like('email', '%.test@%');
   for (const p of pnms || []) if (p.photo_path) await admin.storage.from('pnm-photos').remove([p.photo_path]);
@@ -554,6 +556,76 @@ async function main() {
   await sheet(page).locator('[name="chart"]').selectOption('chair');
   await sheet(page).locator('[data-sheet="primary"]').click();
   await sheet(page).locator('.rowi', { hasText: 'Rush Chairman' }).filter({ hasText: 'Chairmen' }).waitFor();
+  await closeSheets(page);
+
+  // ---- Event check-in -----------------------------------------------------------------
+  // The admin (an officer) starts check-in on an event happening now; a new brother
+  // checks in from Quick access with the code, first from too far away, then from the house.
+  const HOUSE = { latitude: 28.0653, longitude: -80.6236 }, NEAR = { latitude: 28.06565, longitude: -80.62375 }, FAR = { latitude: 28.0753, longitude: -80.6236 };
+  const at = (ms) => new Date(Date.now() + ms).toISOString();
+  await admin.from('events').insert({ id: `E2E-checkin|${at(-10 * 60e3)}`, title: 'E2E Chapter meeting', starts_at: at(-10 * 60e3), ends_at: at(50 * 60e3), location: 'Chapter house' });
+  await phone.grantPermissions(['geolocation']);
+  await phone.setGeolocation(HOUSE);
+  await page.goto('about:blank');
+  await page.goto(BASE + '#week');
+  await page.locator('#account .acct-btn').waitFor();
+  await page.locator('#scene-week .ev', { hasText: 'E2E Chapter meeting' }).first().click();
+  await page.locator('#event-pop [data-ci="start"]').click();
+  ok(await sheet(page).locator('[name="need_location"]').isChecked(), 'check-in: Must be here is on by default');
+  await sheet(page).locator('[data-sheet="primary"]').click();
+  await sheet(page).locator('.ci-code').waitFor();
+  const ciCode = (await sheet(page).locator('.ci-code').innerText()).trim();
+  ok(/^[A-Z0-9]{4}$/.test(ciCode), `check-in: the officer gets a 4-character code (${ciCode})`);
+  await shot(page, 'phone-checkin-code');
+  ok(await page.locator('#week-extra [data-ci="past"]').count() === 1, 'check-in: officers get a Past events button on This week');
+
+  const bro = await (await browser.newContext({ ...devices['iPhone 14'], geolocation: FAR, permissions: ['geolocation'] })).newPage();
+  watch(bro, 'brother');
+  await bro.goto(BASE + '#quick');
+  await signIn(bro, 'checkin.test@my.fit.edu', 9005);
+  await bro.locator('.sheet-title', { hasText: 'Set up your profile' }).waitFor();
+  await sheet(bro).locator('[name="grad_year"]').fill('2029');
+  await sheet(bro).locator('[data-sheet="primary"]').click();
+  await bro.locator('#account .acct-btn').waitFor();
+  await bro.locator('#gtab-week').click();
+  await bro.locator('#gtab-quick').click();
+  await bro.locator('[data-quick="checkin"] .q-live').waitFor();
+  ok(/Check-in open · E2E Chapter meeting/.test(await bro.locator('[data-quick="checkin"]').innerText()), 'check-in: the brother\'s Quick tile says check-in is open');
+  ok(await bro.locator('#week-extra [data-ci="past"]').count() === 0, 'check-in: a brother with no position gets no Past events button');
+  await bro.locator('[data-quick="checkin"]').click();
+  await sheet(bro).locator('[name="code"]').fill(ciCode.toLowerCase());
+  await sheet(bro).locator('[data-ci="go"]').click();
+  await sheet(bro).locator('.form-error:not(:empty)').waitFor();
+  ok(/m from where check-in was started/.test(await sheet(bro).locator('.form-error').innerText()), 'check-in: from 1 km away he is told he is too far');
+  await bro.context().setGeolocation(NEAR);
+  await sheet(bro).locator('[data-ci="go"]').click();
+  await sheet(bro).locator('.ci-success').waitFor();
+  ok(/You're checked in/.test(await sheet(bro).locator('.ci-success').innerText()), 'check-in: from 40 m away, with the code, he is checked in');
+  await shot(bro, 'phone-checkin-done');
+  await sheet(bro).locator('.ci-success [data-sheet="close"]').click(); // Done
+  await bro.locator('#gtab-week').click();
+  await bro.locator('#scene-week .ev', { hasText: 'E2E Chapter meeting' }).first().click();
+  await bro.locator('#event-pop .ci-done').waitFor();
+  ok(/You checked in at/.test(await bro.locator('#event-pop .ci-box').innerText()), 'check-in: the event details tell him he checked in');
+
+  await page.waitForFunction(() => /\b1\b/.test(document.querySelector('.sheet-back:last-of-type .ci-count')?.innerText || ''), null, { timeout: 12000 });
+  ok(true, 'check-in: the officer\'s count goes up by itself');
+  await sheet(page).locator('[data-ci="attendance"]').click();
+  await sheet(page).locator('.ci-count').waitFor();
+  ok(/1 of \d+ brothers/.test(await sheet(page).locator('.ci-count').innerText()), 'attendance: shows how many of the chapter checked in');
+  await sheet(page).locator('.rowi', { hasText: 'Blake Member' }).locator('[data-add]').click();
+  await sheet(page).locator('.rowi', { hasText: 'added by' }).waitFor();
+  ok(/Blake Member[\s\S]*added by/.test(await sheet(page).locator('.fsec', { has: page.locator('h3', { hasText: /^Checked in$/ }) }).innerText()) && !/Former member/.test(await sheet(page).innerText()), 'attendance: an officer adds a brother by hand, and it says who added him');
+  const dl = page.waitForEvent('download');
+  await sheet(page).locator('[data-csv]').click();
+  const file = await dl;
+  ok(/^E2E-Chapter-meeting-\d{4}-\d{2}-\d{2}\.csv$/.test(file.suggestedFilename()), `attendance: downloads as a spreadsheet (${file.suggestedFilename()})`);
+  await closeSheets(page);
+  await page.locator('#gtab-week').click();
+  await page.locator('#week-extra [data-ci="past"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'E2E Chapter meeting' }).waitFor();
+  ok(/2 checked in/.test(await sheet(page).locator('.rowi', { hasText: 'E2E Chapter meeting' }).innerText()), 'past events: lists the event with its attendance');
+  await shot(page, 'phone-past-events');
   await closeSheets(page);
 
   await browser.close();

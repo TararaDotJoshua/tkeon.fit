@@ -92,7 +92,30 @@ async function syncCalendar(sb) {
   for (let i = 0; i < stale.length; i += 100) {
     must(await sb.from('events').delete().in('id', stale.slice(i, i + 100)), 'removing old events');
   }
-  return `${rows.length} events`;
+  const history = await saveEventHistory(sb, rows, window);
+  return `${rows.length} events${history ? `, ${history}` : ''}`;
+}
+
+// Event check-in: keep every event in event_history, because attendance and the
+// Past events list need events after they leave the 2-day window above. An
+// upcoming event that disappears from the calendar is marked removed, not deleted.
+async function saveEventHistory(sb, rows, window) {
+  const now = new Date().toISOString();
+  if (rows.length) {
+    const up = await sb.from('event_history').upsert(rows.map((r) => ({ ...r, removed_at: null, seen_at: now })), { onConflict: 'id' });
+    if (up.error) {
+      if (/PGRST205|Could not find the table|does not exist/i.test(`${up.error.code} ${up.error.message}`)) return 'event history not set up yet';
+      throw new Error(`saving event history: ${up.error.message}`);
+    }
+  }
+  const upcoming = must(await sb.from('event_history').select('id').is('removed_at', null)
+    .gte('starts_at', now).lte('starts_at', window.to.toISOString()), 'reading event history');
+  const keep = new Set(rows.map((r) => r.id));
+  const gone = upcoming.map((r) => r.id).filter((id) => !keep.has(id));
+  for (let i = 0; i < gone.length; i += 100) {
+    must(await sb.from('event_history').update({ removed_at: now }).in('id', gone.slice(i, i + 100)), 'marking removed events');
+  }
+  return gone.length ? `${gone.length} removed from the calendar` : '';
 }
 
 // --- TKE KRAs --------------------------------------------------------------

@@ -258,3 +258,27 @@ button.rowi { width: 100%; border: 0; border-bottom: 1px solid var(--line); back
 .st-chapter .rowi { min-height: 46px; }
 .st-num { display: flex; flex-direction: column; align-items: flex-end; flex: none; min-width: 3.4rem; font-size: 0.8rem; line-height: 1.15; }
 .st-num b { font-size: 0.95rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+/* ---------- Event check-in ---------- */
+.ci-box .btn-row { margin-top: 0.6rem; }
+.ci-line { margin: 0.35rem 0 0; }
+.ci-done { color: var(--met); font-weight: 900; }
+.ci-event { margin: 0 0 0.9rem; line-height: 1.35; }
+.ci-code-box { text-align: center; padding: 0.5rem 0 1rem; }
+.ci-code-box .eyebrow { margin-bottom: 0.3rem; }
+.ci-code { font-weight: 900; font-size: clamp(4.2rem, 24vw, 9rem); line-height: 1; letter-spacing: 0.14em; margin-right: -0.14em; color: var(--text); font-variant-numeric: tabular-nums; }
+.ci-how { margin: 0.9rem auto 0.4rem; max-width: 24rem; color: var(--muted); font-size: 0.95rem; }
+.ci-count { margin: 0.4rem 0; font-size: 1.05rem; }
+.ci-count b { font-size: 1.6rem; font-weight: 900; }
+.btn-row.center { justify-content: center; }
+.ci-open { margin-bottom: 0.9rem; }
+.ci-input { text-align: center; font-size: 2rem; font-weight: 900; letter-spacing: 0.3em; text-transform: uppercase; min-height: 3.6rem; }
+.ci-input::placeholder { color: var(--faint); opacity: 0.5; }
+.ci-go { min-height: 52px; font-size: 1.1rem; }
+.ci-mine { margin-top: 1.1rem; }
+.ci-n { flex: none; font-size: 0.85rem; font-weight: 700; }
+.ci-success { text-align: center; padding: 1.5rem 0.5rem; }
+.ci-success h3 { font-size: 1.5rem; font-weight: 900; margin: 0.6rem 0 0.5rem; }
+.ci-success p { margin: 0 0 1.4rem; line-height: 1.4; }
+.ci-tick { display: inline-flex; align-items: center; justify-content: center; width: 4.5rem; height: 4.5rem; border-radius: 50%; background: var(--met); color: #fff; font-size: 2.4rem; font-weight: 900; }
+.week-extra .btn svg { width: 1.1rem; height: 1.1rem; }

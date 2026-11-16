@@ -6,6 +6,7 @@
 import { $, DAY, confirmSheet, esc, field, fmtDate, formData, openSheet, toast, today, ymd } from './ui.js';
 import { S, sb, avatar, isAdmin, isMember, profile, write } from './store.js';
 import { asMember } from './auth.js';
+import { loadOpenNow, openCheckin, openNow } from './checkin.js';
 
 const D = window.DASH;
 const TIMER_KEY = 'tkeon-study-timer';
@@ -73,6 +74,7 @@ const clock = (ms) => {
 
 const ICONS = {
   org: '<rect x="9" y="2.5" width="6" height="5" rx="1"/><rect x="2.5" y="16.5" width="6" height="5" rx="1"/><rect x="9" y="16.5" width="6" height="5" rx="1"/><rect x="15.5" y="16.5" width="6" height="5" rx="1"/><path d="M12 7.5v4.5M5.5 16.5V12h13v4.5M12 12v4.5"/>',
+  checkin: '<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M8.5 15.5l2.4 2.4 4.6-4.8"/>',
   study: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M8 7h8M8 11h6"/>',
 };
 const tile = (id, title, sub) => `<button class="panel qtile" type="button" data-quick="${id}">
@@ -81,7 +83,7 @@ const tile = (id, title, sub) => `<button class="panel qtile" type="button" data
     <span class="chev" aria-hidden="true">›</span>
   </button>`;
 
-let tileTick = 0;
+let tileTick = 0, openChecked = 0;
 export function renderQuick() {
   const el = $('#scene-quick');
   if (!el || el.hidden) return;
@@ -95,8 +97,16 @@ export function renderQuick() {
   else if (Q.loadedFor !== S.user.id) studySub = 'Loading…';
   else { const t = totals(mine()); studySub = `This week ${hours(t.week)} · ${esc(semesterOf().label)} ${hours(t.semester)}`; }
 
+  // Events with check-in open right now (refreshed when the tab is drawn, at most every 20 s).
+  if (isMember() && Date.now() - openChecked > 20e3) { openChecked = Date.now(); loadOpenNow(true).then(() => { if (D.scene() === 'quick') renderQuick(); }); }
+  const open = isMember() ? openNow() : [];
+  const checkinSub = !isMember() ? 'Sign in to check in to events'
+    : open.length ? `<b class="q-live">Check-in open · ${esc(open[0].title)}${open.length > 1 ? ` + ${open.length - 1} more` : ''}</b>`
+    : 'Type the code an officer gives out at an event';
+
   el.innerHTML = `<div class="app-head"><h2>Quick access</h2></div>
     <div class="quick-grid">
+      ${tile('checkin', 'Event check-in', checkinSub)}
       ${tile('org', 'Org chart', S.loaded ? `${filled} of ${positions.length} positions filled` : 'Loading…')}
       ${tile('study', 'Study hours', studySub)}
     </div>`;
@@ -108,6 +118,7 @@ document.addEventListener('click', (e) => {
   const go = e.target.closest('#scene-quick [data-quick]')?.dataset.quick;
   if (go === 'org') openOrgChart();
   if (go === 'study') asMember(openStudy);
+  if (go === 'checkin') asMember(() => openCheckin());
 });
 
 // ---------- Org chart ----------
