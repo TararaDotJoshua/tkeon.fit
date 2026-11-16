@@ -291,6 +291,7 @@ async function main() {
     { id: evOld, title: `${TAG} old event`, starts_at: at(-5 * 3600e3), ends_at: at(-4 * 3600e3) },
     { id: evLater, title: `${TAG} later event`, starts_at: at(10 * 3600e3), ends_at: at(11 * 3600e3) },
   ]);
+  sql(`update public.checkin_sessions set closed_at = now() where closed_at is null and event_id not like '${TAG}%'`); // stray local check-ins would compete for "nearest"
   const HOUSE = { p_lat: 28.0653, p_lng: -80.6236, p_accuracy: 20 };
   const NEAR = { p_lat: 28.06565, p_lng: -80.62375, p_accuracy: 25 }; // about 40 m away
   const FAR = { p_lat: 28.0753, p_lng: -80.6236, p_accuracy: 25 };    // about 1.1 km away
@@ -322,12 +323,25 @@ async function main() {
   ok((await member.rpc('check_in', { p_code: code, ...NEAR })).data?.already === true, 'checking in twice just says he already did');
   ok(!err(await peer.rpc('check_in', { p_code: ` ${code.slice(0, 2).toLowerCase()} ${code.slice(2)} `, ...NEAR })), 'the code works in lower case and with spaces');
   { const { data } = await member.from('attendance').select('*'); ok(data?.length === 1 && data[0].profile_id === m1.id, 'a brother sees only his own attendance'); }
+  // No code: being there is enough when Must be here is on.
+  refused(await anon.rpc('check_in_here', NEAR), 'visitor cannot check in by location');
+  await adminUser.rpc('attendance_remove', { p_event: evNow, p_profile: other.id });
+  ok(/need_location/.test(err(await peer.rpc('check_in_here', { p_lat: null, p_lng: null }))), 'checking in without a code needs a location');
+  ok(/too_far:1\d{3}/.test(err(await peer.rpc('check_in_here', FAR))), 'without a code, a brother 1.1 km away is refused');
+  ok(/location_vague/.test(err(await peer.rpc('check_in_here', { ...NEAR, p_accuracy: 2500 }))), 'without a code, a location the phone is unsure of is refused');
+  ok(/none_open/.test(err(await peer.rpc('check_in_here', { ...NEAR, p_event: evOld }))), 'without a code, he cannot pick an event whose check-in is not open');
+  { const r = await peer.rpc('check_in_here', NEAR);
+    ok(!err(r) && r.data?.event_id === evNow && r.data?.already === false, 'a brother 40 m away checks in with no code at all', err(r));
+    const { data } = await admin.from('attendance').select('method').eq('event_id', evNow).eq('profile_id', other.id).single();
+    ok(data?.method === 'here', 'it is recorded as checked in at the event'); }
   { const { data } = await adminUser.from('attendance').select('*').eq('event_id', evNow); ok(data?.length === 2, 'an officer sees everyone\'s attendance'); }
   ok(/officers_only/.test(err(await member.rpc('checkin_status', { p_event: evNow }))), 'a member cannot see the code through the status call');
   { const r = await adminUser.rpc('checkin_change', { p_event: evNow, p_action: 'new_code' }); ok(!r.error && r.data.code !== code, 'an officer makes a new code');
     await adminUser.rpc('attendance_remove', { p_event: evNow, p_profile: m1.id });
     ok(/bad_code/.test(err(await member.rpc('check_in', { p_code: code, ...NEAR }))), 'the old code stops working at once');
     allowed(await adminUser.rpc('checkin_change', { p_event: evNow, p_action: 'location_off' }), 'an officer turns off Must be here');
+    await adminUser.rpc('attendance_remove', { p_event: evNow, p_profile: other.id });
+    ok(/none_open/.test(err(await peer.rpc('check_in_here', NEAR))), 'with Must be here off (an online event), being nearby is not enough: he needs the code');
     ok(!err(await member.rpc('check_in', { p_code: r.data.code })), 'with it off, the new code works without a location'); }
   sql('delete from private.checkin_misses');
   for (let i = 0; i < 8; i++) await peer.rpc('check_in', { p_code: 'QQQQ' });

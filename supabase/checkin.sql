@@ -1,6 +1,7 @@
 -- Event check-in: an officer starts check-in on a calendar event and gets a
--- random code; brothers type the code and tap Check in, and (unless the
--- officer switched it off) must be within about 150 m of where he started it.
+-- random code. With "Must be here" on (the default), a brother within about
+-- 150 m of where the officer started it taps Check in here, no code needed;
+-- with it off (online events), he types the code.
 -- Run after app.sql and quick.sql. Safe to run again.
 --
 -- Nothing here stores anyone's location except the spot the officer started
@@ -54,11 +55,14 @@ create table if not exists public.attendance (
   event_id      text not null references public.event_history (id) on delete cascade,
   profile_id    uuid not null references public.profiles (id) on delete cascade,
   checked_in_at timestamptz not null default now(),
-  method        text not null check (method in ('code', 'added')),
+  method        text not null check (method in ('code', 'here', 'added')),
   added_by      uuid references public.profiles (id) on delete set null,
   primary key (event_id, profile_id)
 );
 create index if not exists attendance_profile on public.attendance (profile_id);
+-- 'here' (checked in by location, no code) was added after the table first went live.
+alter table public.attendance drop constraint if exists attendance_method_check;
+alter table public.attendance add constraint attendance_method_check check (method in ('code', 'here', 'added'));
 
 -- Wrong codes, so nobody can guess his way in (kept a day).
 create table if not exists private.checkin_misses (
@@ -285,6 +289,42 @@ begin
   return jsonb_build_object('event_id', e.id, 'title', e.title, 'starts_at', e.starts_at, 'all_day', e.all_day, 'already', was);
 end $$;
 
+-- Check in by being there: no code. Only for events with "Must be here" on;
+-- picks the open check-in nearest the brother (or the one he chose, p_event)
+-- and applies the same distance rule as check_in(). Online events, with the
+-- location check off, still need the code.
+create or replace function public.check_in_here(p_lat double precision, p_lng double precision,
+  p_accuracy double precision default null, p_event text default null)
+returns jsonb language plpgsql volatile security definer set search_path = '' as $$
+declare
+  me uuid := (select auth.uid());
+  v_event text;
+  v_dist double precision;
+  v_allowed double precision;
+  e public.event_history;
+  was boolean;
+begin
+  if not public.is_member() then raise exception 'members_only'; end if;
+  if p_lat is null or p_lng is null or p_lat not between -90 and 90 or p_lng not between -180 and 180 then raise exception 'need_location'; end if;
+  if p_accuracy is not null and p_accuracy > 1000 then raise exception 'location_vague'; end if;
+  select s.event_id, private.metres(s.lat, s.lng, p_lat, p_lng),
+         150 + least(coalesce(p_accuracy, 0), 150) + least(coalesce(s.accuracy_m, 0), 150)
+    into v_event, v_dist, v_allowed
+  from public.checkin_sessions s
+  where s.closed_at is null and s.closes_at > now() and s.need_location and s.lat is not null
+    and (p_event is null or s.event_id = p_event)
+  order by private.metres(s.lat, s.lng, p_lat, p_lng)
+  limit 1;
+  if v_event is null then raise exception 'none_open'; end if;
+  if v_dist > v_allowed then raise exception 'too_far:%', round(v_dist)::int; end if;
+  select * into e from public.event_history where id = v_event;
+  was := exists (select 1 from public.attendance where event_id = v_event and profile_id = me);
+  if not was then
+    insert into public.attendance (event_id, profile_id, method) values (v_event, me, 'here');
+  end if;
+  return jsonb_build_object('event_id', e.id, 'title', e.title, 'starts_at', e.starts_at, 'all_day', e.all_day, 'already', was);
+end $$;
+
 -- ---------------------------------------------------------------------------
 -- Who may call what. Supabase grants new functions to everyone by default.
 -- ---------------------------------------------------------------------------
@@ -292,6 +332,7 @@ revoke execute on function public.is_officer(), public.checkin_start(text, boole
   public.checkin_status(text), public.checkin_change(text, text, double precision, double precision, double precision),
   public.attendance_add(text, uuid), public.attendance_remove(text, uuid), public.checkin_open_now(),
   public.check_in(text, double precision, double precision, double precision),
+  public.check_in_here(double precision, double precision, double precision, text),
   private.checkin_new_code(), private.metres(double precision, double precision, double precision, double precision),
   private.checkin_event(text), private.checkin_status_of(text)
   from public, anon, authenticated;
@@ -299,4 +340,5 @@ grant execute on function public.is_officer() to anon, authenticated, service_ro
 grant execute on function public.checkin_start(text, boolean, double precision, double precision, double precision),
   public.checkin_status(text), public.checkin_change(text, text, double precision, double precision, double precision),
   public.attendance_add(text, uuid), public.attendance_remove(text, uuid), public.checkin_open_now(),
-  public.check_in(text, double precision, double precision, double precision) to authenticated;
+  public.check_in(text, double precision, double precision, double precision),
+  public.check_in_here(double precision, double precision, double precision, text) to authenticated;

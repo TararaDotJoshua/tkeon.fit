@@ -102,7 +102,7 @@ export function renderQuick() {
   const open = isMember() ? openNow() : [];
   const checkinSub = !isMember() ? 'Sign in to check in to events'
     : open.length ? `<b class="q-live">Check-in open · ${esc(open[0].title)}${open.length > 1 ? ` + ${open.length - 1} more` : ''}</b>`
-    : 'Type the code an officer gives out at an event';
+    : 'Check in at chapter events';
 
   el.innerHTML = `<div class="app-head"><h2>Quick access</h2></div>
     <div class="quick-grid">

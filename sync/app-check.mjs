@@ -593,14 +593,19 @@ async function main() {
   ok(/Check-in open · E2E Chapter meeting/.test(await bro.locator('[data-quick="checkin"]').innerText()), 'check-in: the brother\'s Quick tile says check-in is open');
   ok(await bro.locator('#week-extra [data-ci="past"]').count() === 0, 'check-in: a brother with no position gets no Past events button');
   await bro.locator('[data-quick="checkin"]').click();
+  await sheet(bro).locator('[data-ci="here"]').waitFor();
+  ok(/E2E Chapter meeting/.test(await sheet(bro).locator('.ci-here').innerText()), 'check-in: the screen offers Check in here for the open event');
+  await bro.waitForTimeout(400);
+  await shot(bro, 'phone-checkin-here');
   await sheet(bro).locator('[name="code"]').fill(ciCode.toLowerCase());
   await sheet(bro).locator('[data-ci="go"]').click();
   await sheet(bro).locator('.form-error:not(:empty)').waitFor();
-  ok(/m from where check-in was started/.test(await sheet(bro).locator('.form-error').innerText()), 'check-in: from 1 km away he is told he is too far');
+  ok(/m from where check-in was started/.test(await sheet(bro).locator('.form-error').innerText()), 'check-in: from 1 km away, even with the code, he is told he is too far');
+  await sheet(bro).locator('[name="code"]').fill('');
   await bro.context().setGeolocation(NEAR);
-  await sheet(bro).locator('[data-ci="go"]').click();
+  await sheet(bro).locator('[data-ci="here"]').click();
   await sheet(bro).locator('.ci-success').waitFor();
-  ok(/You're checked in/.test(await sheet(bro).locator('.ci-success').innerText()), 'check-in: from 40 m away, with the code, he is checked in');
+  ok(/You're checked in/.test(await sheet(bro).locator('.ci-success').innerText()), 'check-in: from 40 m away he taps Check in here, with no code, and is checked in');
   await shot(bro, 'phone-checkin-done');
   await sheet(bro).locator('.ci-success [data-sheet="close"]').click(); // Done
   await bro.locator('#gtab-week').click();
@@ -613,6 +618,7 @@ async function main() {
   await sheet(page).locator('[data-ci="attendance"]').click();
   await sheet(page).locator('.ci-count').waitFor();
   ok(/1 of \d+ brothers/.test(await sheet(page).locator('.ci-count').innerText()), 'attendance: shows how many of the chapter checked in');
+  ok(/at the event/.test(await sheet(page).locator('.rowi', { hasText: 'E2E' }).first().innerText().catch(() => '')) || /at the event/.test(await sheet(page).innerText()), 'attendance: shows he checked in at the event, not with the code');
   await sheet(page).locator('.rowi', { hasText: 'Blake Member' }).locator('[data-add]').click();
   await sheet(page).locator('.rowi', { hasText: 'added by' }).waitFor();
   ok(/Blake Member[\s\S]*added by/.test(await sheet(page).locator('.fsec', { has: page.locator('h3', { hasText: /^Checked in$/ }) }).innerText()) && !/Former member/.test(await sheet(page).innerText()), 'attendance: an officer adds a brother by hand, and it says who added him');
@@ -628,6 +634,7 @@ async function main() {
   await shot(page, 'phone-past-events');
   await closeSheets(page);
 
+  await cleanup(); // leave no open check-in behind for the other test scripts
   await browser.close();
   ok(errors.length === 0, 'no script errors in any browser', errors.join('\n        '));
   console.log(`\n${passed}/${passed + failed} app checks passed. Screenshots in sync/.shots/app/`);

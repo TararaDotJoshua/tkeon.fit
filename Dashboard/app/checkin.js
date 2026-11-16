@@ -1,9 +1,10 @@
 // Event check-in.
 //  - Officers (an admin, or anyone holding a position) start check-in from an
 //    event in This week. The app shows a random 4-character code.
-//  - Brothers open Quick access > Event check-in, type the code and tap Check in.
-//    Unless the officer switched it off, the phone must be near where check-in
-//    was started; the location is checked once and never saved.
+//  - Brothers open Quick access > Event check-in. At an event with "Must be here"
+//    on (the default) they tap Check in here: the phone's location is checked
+//    once against where check-in was started, and never saved. No code needed.
+//    At an online event (Must be here off) they type the code.
 //  - Officers see attendance from the event, and past events from This week.
 // The database checks all of it (supabase/checkin.sql); these are the screens.
 
@@ -42,6 +43,7 @@ const WHY = {
   not_open: 'Check-in for this event is closed.',
   members_only: 'Sign in first.',
   no_event: "That event isn't on the calendar anymore.",
+  none_open: "No event near you has check-in open. If it's an online event, type the code instead.",
 };
 function why(err) {
   const m = String(err?.message || err || '');
@@ -75,6 +77,7 @@ function download(name, rows) {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
 }
+const HOW = { code: 'Code', here: 'At the event', added: 'Added by an officer' };
 const fileName = (title, iso) => `${String(title).replace(/[^\w -]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'event'}-${iso.slice(0, 10)}.csv`;
 
 // Semesters: Spring is January to May, Fall June to December (as elsewhere).
@@ -153,9 +156,10 @@ async function brotherBox(e, box) {
   if (mine.data) {
     box.innerHTML = `<div class="eyebrow">Check-in</div><p class="ci-line ci-done">✓ You checked in at ${esc(time(mine.data.checked_in_at))}.</p>`;
   } else if (open.some((x) => x.event_id === e.id)) {
-    box.innerHTML = `<div class="eyebrow">Check-in</div><p class="ci-line">Check-in is open. Get the code from an officer.</p>
-      <div class="btn-row"><button class="btn primary" type="button" data-ci="checkin">Check in</button></div>`;
-    $('[data-ci="checkin"]', box).addEventListener('click', () => { D.closeEvent(); openCheckin(); });
+    const here = open.find((x) => x.event_id === e.id).need_location;
+    box.innerHTML = `<div class="eyebrow">Check-in</div><p class="ci-line">${here ? "Check-in is open. If you're there, tap Check in here." : 'Check-in is open. Get the code from an officer.'}</p>
+      <div class="btn-row"><button class="btn primary" type="button" data-ci="checkin">${here ? 'Check in here' : 'Check in'}</button></div>`;
+    $('[data-ci="checkin"]', box).addEventListener('click', () => { D.closeEvent(); openCheckin('', here ? { here: e.id } : {}); });
   } else {
     box.remove(); // nothing to say
   }
@@ -170,9 +174,9 @@ function openStart(e) {
       <p class="ci-event"><b>${esc(e.title)}</b><br><span class="muted">${esc(when(e))}</span></p>
       <div class="fsec">
         <label class="switch"><span>Must be here</span><input type="checkbox" name="need_location" checked></label>
-        <p class="hint" style="margin:-0.3rem 0 0.9rem">Brothers must be within about 150 m of where your phone is now. Turn this off for an online event. Uses your location once, now.</p>
+        <p class="hint" style="margin:-0.3rem 0 0.9rem">Brothers within about 150 m of where your phone is now just tap Check in here, no code needed. Turn this off for an online event; then they type the code. Uses your location once, now.</p>
       </div>
-      <p class="muted small-text">You get a 4-character code to read out or put on screen. Check-in closes 30 minutes after the event ends.</p>`,
+      <p class="muted small-text">You also get a 4-character code, for anyone whose location won't work and for online events. Check-in closes 30 minutes after the event ends.</p>`,
     onPrimary: async () => {
       const need = $('[name="need_location"]', s.body).checked;
       let at = {};
@@ -205,7 +209,7 @@ function openCode(e) {
         <p class="ci-event"><b>${esc(e.title)}</b><br><span class="muted">${esc(when(e))}</span></p>
         <p class="eyebrow">Check-in code</p>
         <div class="ci-code" aria-label="Code ${esc(st.code.split('').join(' '))}">${esc(st.code)}</div>
-        <p class="ci-how">Quick access › <b>Event check-in</b> › type the code › <b>Check in</b></p>
+        <p class="ci-how">${st.need_location ? 'At the event: Quick access › <b>Event check-in</b> › <b>Check in here</b>. No code needed.' : 'Quick access › <b>Event check-in</b> › type the code › <b>Check in</b>'}</p>
         <p class="ci-count"><b>${st.count}</b> checked in</p>
         <p class="muted small-text">Open until ${esc(time(st.closes_at))} · ${st.need_location ? 'Must be here: on' : 'Must be here: off'}</p>
       </div>
@@ -262,7 +266,7 @@ export async function openAttendance(eventId) {
       <p class="ci-event"><b>${esc(ev.title)}</b><br><span class="muted">${esc(when(ev))}</span></p>
       <p class="ci-count"><b>${rows.length}</b> of ${members.length} brothers checked in</p>
       <div class="fsec plain"><h3>Checked in</h3>
-        ${rows.length ? `<ul class="rows">${rows.map((r) => { const p = profile(r.profile_id); const by = r.method === 'added' ? ` · added by ${esc(profile(r.added_by)?.name || 'an officer')}` : ''; return `<li class="rowi">${avatar(p, 'sm')}<span class="rowi-main"><span class="rowi-title">${esc(p?.name || 'Former member')}</span><span class="rowi-sub">${esc(time(r.checked_in_at))}${by}</span></span><button class="btn quiet small" type="button" data-rm="${r.profile_id}">Remove</button></li>`; }).join('')}</ul>` : '<p class="muted small-text">Nobody yet.</p>'}
+        ${rows.length ? `<ul class="rows">${rows.map((r) => { const p = profile(r.profile_id); const by = r.method === 'added' ? ` · added by ${esc(profile(r.added_by)?.name || 'an officer')}` : r.method === 'here' ? ' · at the event' : ' · with the code'; return `<li class="rowi">${avatar(p, 'sm')}<span class="rowi-main"><span class="rowi-title">${esc(p?.name || 'Former member')}</span><span class="rowi-sub">${esc(time(r.checked_in_at))}${by}</span></span><button class="btn quiet small" type="button" data-rm="${r.profile_id}">Remove</button></li>`; }).join('')}</ul>` : '<p class="muted small-text">Nobody yet.</p>'}
       </div>
       <div class="fsec plain"><h3>Not checked in</h3>
         ${away.length ? `<ul class="rows">${away.map((p) => `<li class="rowi">${avatar(p, 'sm')}<span class="rowi-main"><span class="rowi-title">${esc(p.name || 'No name yet')}</span></span><button class="btn small" type="button" data-add="${p.id}">Add</button></li>`).join('')}</ul>` : '<p class="muted small-text">Everyone is here.</p>'}
@@ -282,7 +286,7 @@ export async function openAttendance(eventId) {
     if (e.target.closest('[data-csv]')) {
       const here = new Map(rows.map((r) => [r.profile_id, r]));
       download(fileName(ev.title, ev.starts_at), [['Name', 'Class of', 'Checked in', 'Time', 'How'],
-        ...S.profiles.filter((p) => !p.disabled || here.has(p.id)).map((p) => { const r = here.get(p.id); return [p.name, p.grad_year, r ? 'Yes' : 'No', r ? new Date(r.checked_in_at).toLocaleString('en-US') : '', r ? (r.method === 'added' ? `Added by ${profile(r.added_by)?.name || 'an officer'}` : 'Code') : '']; })]);
+        ...S.profiles.filter((p) => !p.disabled || here.has(p.id)).map((p) => { const r = here.get(p.id); return [p.name, p.grad_year, r ? 'Yes' : 'No', r ? new Date(r.checked_in_at).toLocaleString('en-US') : '', r ? (r.method === 'added' ? `Added by ${profile(r.added_by)?.name || 'an officer'}` : HOW[r.method] || r.method) : '']; })]);
     }
   });
   try { await load(); draw(); } catch (err) { s.set(`<p class="empty">${esc(why(err))}</p>`); }
@@ -337,7 +341,7 @@ export function openPast() {
         const byId = new Map(events.map((x) => [x.id, x]));
         rows.sort((a, b) => byId.get(a.event_id).starts_at.localeCompare(byId.get(b.event_id).starts_at) || (profile(a.profile_id)?.name || '').localeCompare(profile(b.profile_id)?.name || ''));
         download(`attendance-${term.label.replace(' ', '-')}.csv`, [['Event', 'Date', 'Name', 'Checked in', 'How'],
-          ...rows.map((r) => { const x = byId.get(r.event_id); return [x.title, x.starts_at.slice(0, 10), profile(r.profile_id)?.name || 'Former member', new Date(r.checked_in_at).toLocaleString('en-US'), r.method === 'added' ? 'Added by an officer' : 'Code']; })]);
+          ...rows.map((r) => { const x = byId.get(r.event_id); return [x.title, x.starts_at.slice(0, 10), profile(r.profile_id)?.name || 'Former member', new Date(r.checked_in_at).toLocaleString('en-US'), HOW[r.method] || r.method]; })]);
       } catch (err) { s.error(why(err)); }
     }
   });
@@ -359,23 +363,30 @@ onChange(renderWeekExtra);
 
 // ---------- Brothers: Event check-in (Quick access) ----------
 
-export function openCheckin(prefill = '') {
-  if (!isMember()) return asMember(() => openCheckin(prefill));
+export function openCheckin(prefill = '', opts = {}) {
+  if (!isMember()) return asMember(() => openCheckin(prefill, opts));
   const s = openSheet({ title: 'Event check-in' });
   let mine = [];
   const draw = (code = prefill) => {
     if (s.closed) return;
     const open = openNow();
+    const here = open.filter((x) => x.need_location);  // check in by being there
+    const codeOnly = open.filter((x) => !x.need_location); // online events: the code
     const term = semesters(1)[0];
     const thisTerm = mine.filter((r) => r.event_history && r.event_history.starts_at >= term.start.toISOString());
     s.set(`<div class="form-error" role="alert"></div>
-      <div class="fsec plain ci-open">${open.length
-        ? `<h3>Check-in open now</h3><ul class="rows">${open.map((x) => `<li class="rowi"><span class="rowi-main"><span class="rowi-title">${esc(x.title)}</span><span class="rowi-sub">${esc(time(x.starts_at))}${x.need_location ? " · you'll need to be there" : ''}</span></span></li>`).join('')}</ul>`
-        : '<p class="muted small-text" style="margin:0">No event has check-in open right now. An officer starts it at the event and gives out the code.</p>'}</div>
+      ${here.length ? `<div class="fsec plain ci-here">
+          <h3>Check-in open now</h3>
+          <p class="ci-here-title">${here.map((x) => `<b>${esc(x.title)}</b> <span class="muted">${esc(time(x.starts_at))}</span>`).join('<br>')}</p>
+          <button class="btn primary block ci-go" type="button" data-ci="here">Check in here</button>
+          <p class="hint">If you're at the event, that's all. Your phone's location is checked once and isn't saved.</p>
+        </div>
+        <p class="ci-or"><span>or type the code</span></p>`
+      : codeOnly.length ? `<div class="fsec plain ci-open"><h3>Check-in open now</h3><ul class="rows">${codeOnly.map((x) => `<li class="rowi"><span class="rowi-main"><span class="rowi-title">${esc(x.title)}</span><span class="rowi-sub">${esc(time(x.starts_at))} · type the code from the officer</span></span></li>`).join('')}</ul></div>`
+      : '<div class="fsec plain ci-open"><p class="muted small-text" style="margin:0">No event has check-in open right now. An officer starts it at the event.</p></div>'}
       <label class="field"><span class="lab">Event code</span>
-        <input class="input ci-input" name="code" value="${esc(code)}" maxlength="6" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="K7QM" aria-describedby="ci-hint"></label>
-      <button class="btn primary block ci-go" type="button" data-ci="go">Check in</button>
-      <p class="hint" id="ci-hint">Some events check that you're there: your phone's location is checked once when you tap Check in, and isn't saved.</p>
+        <input class="input ci-input" name="code" value="${esc(code)}" maxlength="6" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Event code, 4 characters"></label>
+      <button class="btn ${here.length ? '' : 'primary '}block ci-go" type="button" data-ci="go">Check in with the code</button>
       <div class="fsec plain ci-mine"><h3>Your attendance · ${esc(term.label)}</h3>
         ${thisTerm.length ? `<ul class="rows">${thisTerm.map((r) => `<li class="rowi"><span class="rowi-main"><span class="rowi-title">${esc(r.event_history.title)}</span><span class="rowi-sub">${esc(when(r.event_history))}</span></span><span class="ci-done">✓</span></li>`).join('')}</ul>` : '<p class="muted small-text">No events yet this semester.</p>'}
       </div>`);
@@ -386,16 +397,27 @@ export function openCheckin(prefill = '') {
       <h3>${res.already ? 'You were already checked in' : "You're checked in"}</h3>
       <p><b>${esc(res.title)}</b><br><span class="muted">${esc(when(res))}</span></p>
       <button class="btn block" type="button" data-sheet="close">Done</button></div>`);
+    if (!res.already) toast(`Checked in to ${res.title}.`);
+    document.dispatchEvent(new CustomEvent('dash:checkin'));
   };
-  const go = async () => {
-    const input = $('[name="code"]', s.body), btn = $('[data-ci="go"]', s.body);
-    const code = (input?.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (code.length < 4) return s.error('Type the 4-character code from the officer.');
-    btn.disabled = true;
-    btn.textContent = 'Checking…';
+  const busy = (btn, text) => { const was = btn?.textContent; if (btn) { btn.disabled = true; btn.textContent = text; } return () => { if (btn && !s.closed) { btn.disabled = false; btn.textContent = was; } }; };
+
+  // One tap: no code, just the phone's location.
+  const goHere = async (eventId = null) => {
     s.error('');
+    const done = busy($('[data-ci="here"]', s.body), 'Finding you…');
+    try {
+      const at = await locate();
+      success(await rpc('check_in_here', { p_lat: at.lat, p_lng: at.lng, p_accuracy: at.accuracy, p_event: eventId }));
+    } catch (err) { s.error(why(err)); done(); }
+  };
+  // The code (with the location too, when the event checks it).
+  const goCode = async () => {
+    const code = ($('[name="code"]', s.body)?.value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length < 4) return s.error('Type the 4-character code from the officer.');
+    s.error('');
+    const done = busy($('[data-ci="go"]', s.body), 'Checking…');
     let at = {}, geoErr = null;
-    // Get the location when any open check-in asks for it (or we don't know yet).
     const open = await loadOpenNow(true);
     if (!open.length || open.some((x) => x.need_location)) {
       try { at = await locate(); } catch (err) { geoErr = err; }
@@ -404,21 +426,25 @@ export function openCheckin(prefill = '') {
       const res = await rpc('check_in', { p_code: code, p_lat: at.lat ?? null, p_lng: at.lng ?? null, p_accuracy: at.accuracy ?? null });
       if (res?.error) throw new Error(res.error); // a wrong code comes back as an answer, not an error
       success(res);
-      if (!res.already) toast(`Checked in to ${res.title}.`);
-      document.dispatchEvent(new CustomEvent('dash:checkin'));
     } catch (err) {
-      const m = String(err?.message || '');
-      s.error(geoErr && /need_location/.test(m) ? why(geoErr) : why(err));
-      btn.disabled = false;
-      btn.textContent = 'Check in';
+      s.error(geoErr && /need_location/.test(String(err?.message || '')) ? why(geoErr) : why(err));
+      done();
     }
   };
-  s.body.addEventListener('click', (e) => { if (e.target.closest('[data-ci="go"]')) go(); });
-  s.body.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('[name="code"]')) { e.preventDefault(); go(); } });
+  s.body.addEventListener('click', (e) => {
+    if (e.target.closest('[data-ci="here"]')) goHere();
+    if (e.target.closest('[data-ci="go"]')) goCode();
+  });
+  s.body.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('[name="code"]')) { e.preventDefault(); goCode(); } });
   s.body.addEventListener('input', (e) => { if (e.target.matches('[name="code"]')) e.target.value = e.target.value.toUpperCase(); });
   s.set('<p class="empty">Loading…</p>');
   Promise.all([
     loadOpenNow(true),
     sb.from('attendance').select('checked_in_at, event_history(title, starts_at, all_day)').eq('profile_id', S.user.id).order('checked_in_at', { ascending: false }).limit(100),
-  ]).then(([, a]) => { mine = a.data || []; draw(); setTimeout(() => $('[name="code"]', s.body)?.focus(), 50); }, () => draw());
+  ]).then(([, a]) => {
+    mine = a.data || [];
+    draw();
+    if (opts.here) goHere(opts.here);                                  // "Check in here" from the event's details
+    else if (prefill || !openNow().some((x) => x.need_location)) setTimeout(() => $('[name="code"]', s.body)?.focus(), 50);
+  }, () => draw());
 }
