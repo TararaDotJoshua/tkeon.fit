@@ -288,3 +288,4 @@ button.rowi { width: 100%; border: 0; border-bottom: 1px solid var(--line); back
 .ci-or span { padding: 0 0.7rem; }
 .ci-past { padding-top: 0.2rem; padding-bottom: 0.2rem; }
 .ci-past .ci-n { margin-left: 0.6rem; }
+.list-box { padding-top: 0.2rem; padding-bottom: 0.2rem; }

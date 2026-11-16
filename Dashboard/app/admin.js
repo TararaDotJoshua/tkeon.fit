@@ -37,7 +37,7 @@ function listSheet(title, draw, onClick) {
 // ---------- Members ----------
 
 function openMembers() {
-  listSheet('Members', () => `<ul class="rows fsec plain">${S.profiles.map((p) => row(`data-member="${p.id}"`, esc(p.name || 'No name yet') + (p.is_admin ? ' · Admin' : p.can_recruit ? ' · Recruitment' : '') + (p.disabled ? ' · Turned off' : ''), `${p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No year yet'}${teamsOfProfile(p.id).length ? ' · ' + teamsOfProfile(p.id).map((t) => esc(t.name)).join(', ') : ''}`, avatar(p))).join('') || '<li class="muted">Nobody has signed in yet.</li>'}</ul>
+  listSheet('Members', () => `<div class="fsec plain list-box"><ul class="rows">${S.profiles.map((p) => row(`data-member="${p.id}"`, esc(p.name || 'No name yet') + (p.is_admin ? ' · Admin' : p.can_recruit ? ' · Recruitment' : '') + (p.disabled ? ' · Turned off' : ''), `${p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No year yet'}${teamsOfProfile(p.id).length ? ' · ' + teamsOfProfile(p.id).map((t) => esc(t.name)).join(', ') : ''}`, avatar(p))).join('') || '<li class="muted">Nobody has signed in yet.</li>'}</ul></div>
     <p class="muted small-text">Members appear here after their first sign-in.</p>`,
   (e, redraw) => { const id = e.target.closest('[data-member]')?.dataset.member; if (id) openMember(id, redraw); });
 }
