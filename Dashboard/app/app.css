@@ -282,3 +282,5 @@ button.rowi { width: 100%; border: 0; border-bottom: 1px solid var(--line); back
 .ci-success p { margin: 0 0 1.4rem; line-height: 1.4; }
 .ci-tick { display: inline-flex; align-items: center; justify-content: center; width: 4.5rem; height: 4.5rem; border-radius: 50%; background: var(--met); color: #fff; font-size: 2.4rem; font-weight: 900; }
 .week-extra .btn svg { width: 1.1rem; height: 1.1rem; }
+.ci-past { padding-top: 0.2rem; padding-bottom: 0.2rem; }
+.ci-past .ci-n { margin-left: 0.6rem; }
