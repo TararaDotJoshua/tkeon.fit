@@ -176,7 +176,7 @@ function openStart(e) {
         <label class="switch"><span>Must be here</span><input type="checkbox" name="need_location" checked></label>
         <p class="hint" style="margin:-0.3rem 0 0.9rem">Brothers within about 150 m of where your phone is now just tap Check in here, no code needed. Turn this off for an online event; then they type the code. Uses your location once, now.</p>
       </div>
-      <p class="muted small-text">You also get a 4-character code, for anyone whose location won't work and for online events. Check-in closes 30 minutes after the event ends.</p>`,
+      <p class="muted small-text">You also get a 4-character code. With Must be here on, it still needs the brother's location; it's for online events, with Must be here off. Anyone whose location won't work, add from Attendance. Check-in closes 30 minutes after the event ends.</p>`,
     onPrimary: async () => {
       const need = $('[name="need_location"]', s.body).checked;
       let at = {};
