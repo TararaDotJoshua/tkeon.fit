@@ -9,6 +9,7 @@ import { renderSettings } from './settings.js';
 import { canRecruit, loadRecruit, openPnm, renderRecruit, resetRecruit } from './recruit.js';
 import { loadStudy, openOrgChart, openStudy, renderQuick, resetStudy } from './quick.js';
 import { asMember } from './auth.js';
+import { loadOpenNow, openCheckin, renderWeekExtra } from './checkin.js';
 
 const D = window.DASH;
 
@@ -26,6 +27,7 @@ function render() {
   const scene = D.scene();
   if (scene === 'recruit') renderRecruit();
   if (scene === 'quick') renderQuick();
+  renderWeekExtra(); // officers get the Past events button on This week
   if (scene === 'goals') renderGoals();
   if (scene === 'board') renderBoard();
   if (scene === 'settings') renderSettings();
@@ -38,15 +40,17 @@ let recruitFetched = 0;
 document.addEventListener('dash:scene', (e) => {
   if (e.detail === 'recruit' && canRecruit() && Date.now() - recruitFetched > 10e3) { recruitFetched = Date.now(); loadRecruit(); }
   if (e.detail === 'quick' && studyFor) loadStudy(); // hours logged on another device show up
+  if (e.detail === 'quick' && studyFor) loadOpenNow(true).then(() => { if (D.scene() === 'quick') renderQuick(); }); // check-in just opened
 });
 document.addEventListener('dash:data', () => { if (D.scene() === 'goals') renderGoals(); }); // goals that follow a KRA
 
-// A link to one goal or issue, like #goals/<id> or #board/<id>, opens it.
+// A link to one goal or issue, like #goals/<id> or #board/<id>, opens it; #checkin opens Event check-in.
 let deepLinkDone = false;
 function openDeepLink() {
   if (deepLinkDone || !S.loaded) return;
   deepLinkDone = true;
   const [scene, id] = location.hash.replace('#', '').split('/');
+  if (scene === 'checkin') { D.show('quick'); asMember(() => openCheckin(id || '')); return; } // tkeon.fit/Dashboard/#checkin(/K7QM)
   if (!id) return;
   if (scene === 'goals') openGoal(id);
   if (scene === 'board') openIssue(id);
@@ -55,6 +59,13 @@ function openDeepLink() {
   if (scene === 'quick' && id === 'study') asMember(openStudy);
 }
 onChange(openDeepLink);
+// A check-in link opened while the app is already running.
+addEventListener('hashchange', () => {
+  if (!/^#checkin\b/.test(location.hash)) return;
+  const code = location.hash.split('/')[1] || '';
+  D.show('quick');
+  asMember(() => openCheckin(code));
+});
 
 await initAuth();
 await load();

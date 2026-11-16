@@ -351,6 +351,8 @@
 
   /* ---------- Screen 3: this week ---------- */
   html.tv #scene-week { display: flex; flex-direction: column; }
+  .week-extra:empty { display: none; }
+  .week-extra { margin-top: 1rem; }
   .week-head { display: flex; align-items: baseline; flex-wrap: wrap; margin-bottom: 0.9rem; }
   .week-head h2 { font-size: 1.6rem; font-weight: 900; margin-right: 0.8rem; }
   .range { color: var(--muted); }
@@ -796,7 +798,8 @@ function renderWeek(d, now) {
     '</section>';
   }).join('');
   return '<div class="week-head"><h2>This week</h2><span class="range">' + esc(fmtDay(days[0])) + ' – ' + esc(fmtDay(days[6])) + '</span><div class="nextup" id="nextup"></div></div>' +
-    '<div class="week">' + cols + '</div>';
+    '<div class="week">' + cols + '</div>' +
+    '<div class="week-extra" id="week-extra"></div>'; // members' app: the Past events button for officers
 }
 
 // ---------- Event details (members) ----------
@@ -870,6 +873,8 @@ function openEvent(e, from) {
   document.body.appendChild(back);
   document.body.classList.add('pop-open');
   popFrom = from || null;
+  // The members' app adds the Check-in section (start check-in, attendance, check in).
+  if (window.DASH.eventExtra) window.DASH.eventExtra(e, back.querySelector('.pop'));
   back.querySelector('.pop-close').focus();
 }
 
@@ -1411,6 +1416,8 @@ window.DASH = {
   scene: function () { return SCENES[state.scene].id; },
   show: function (id) { showScene(sceneFrom(id), { fromUser: true }); },
   setRecruit: function (on) { document.documentElement.classList.toggle('can-recruit', Boolean(on)); },
+  closeEvent: function () { closeEvent(); },
+  eventExtra: null, // set by Dashboard/app/checkin.js
 };
 
 if (TV) setUpTv(); else setUpMembers();

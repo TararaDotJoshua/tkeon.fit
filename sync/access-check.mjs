@@ -282,6 +282,76 @@ async function main() {
   allowed(await adminUser.from('teams').update({ chart: 'exec' }).eq('id', pos.id).select().single(), 'admin can move a position on the org chart');
   await adminUser.from('teams').update({ chart: 'head' }).eq('id', pos.id);
 
+  // ---- Event check-in -------------------------------------------------------------
+  // adminUser is an officer (admins are); member (m1) is on a committee only; peer is a plain member.
+  const at = (ms) => new Date(Date.now() + ms).toISOString();
+  const evNow = `${TAG}-checkin|${at(-10 * 60e3)}`, evOld = `${TAG}-old|${at(-5 * 3600e3)}`, evLater = `${TAG}-later|${at(10 * 3600e3)}`;
+  await admin.from('events').insert([
+    { id: evNow, title: `${TAG} chapter meeting`, starts_at: at(-10 * 60e3), ends_at: at(50 * 60e3) },
+    { id: evOld, title: `${TAG} old event`, starts_at: at(-5 * 3600e3), ends_at: at(-4 * 3600e3) },
+    { id: evLater, title: `${TAG} later event`, starts_at: at(10 * 3600e3), ends_at: at(11 * 3600e3) },
+  ]);
+  const HOUSE = { p_lat: 28.0653, p_lng: -80.6236, p_accuracy: 20 };
+  const NEAR = { p_lat: 28.06565, p_lng: -80.62375, p_accuracy: 25 }; // about 40 m away
+  const FAR = { p_lat: 28.0753, p_lng: -80.6236, p_accuracy: 25 };    // about 1.1 km away
+  const err = (res) => `${res.error?.message || res.data?.error || ''}`;
+  allowed(await anon.from('event_history').select('*').limit(1), 'visitor can read event history (the calendar is public)');
+  refused(await anon.from('attendance').select('*'), 'visitor cannot read attendance');
+  refused(await anon.from('checkin_sessions').select('*'), 'visitor cannot read check-in codes');
+  refused(await anon.rpc('check_in', { p_code: 'AAAA' }), 'visitor cannot check in');
+  refused(await anon.rpc('checkin_start', { p_event: evNow, p_need_location: false }), 'visitor cannot start check-in');
+  ok(/officers_only/.test(err(await member.rpc('checkin_start', { p_event: evNow, p_need_location: false }))), 'a committee member who holds no position cannot start check-in');
+  ok(/need_location/.test(err(await adminUser.rpc('checkin_start', { p_event: evNow, p_need_location: true }))), '"Must be here" needs the officer\'s location to start');
+  ok(/too_early/.test(err(await adminUser.rpc('checkin_start', { p_event: evLater, p_need_location: false }))), 'check-in cannot start more than 3 hours early');
+  ok(/event_over/.test(err(await adminUser.rpc('checkin_start', { p_event: evOld, p_need_location: false }))), 'check-in cannot start after the event ended');
+  const started = await adminUser.rpc('checkin_start', { p_event: evNow, p_need_location: true, ...HOUSE });
+  allowed(started, 'an officer starts check-in with his location');
+  const code = started.data?.code;
+  ok(/^[ACDEFGHJKMNPQRTUVWXY34679]{4}$/.test(code || '') && started.data?.open === true, `it gives a 4-character code with no look-alike characters (${code})`);
+  ok((await adminUser.rpc('checkin_start', { p_event: evNow, p_need_location: true, ...HOUSE })).data?.code === code, 'starting it again shows the same code');
+  { const { data } = await admin.from('event_history').select('id').eq('id', evNow); ok(data?.length === 1, 'starting check-in copies the event into the history'); }
+  refused(await member.from('checkin_sessions').select('*'), 'a member cannot read the codes table');
+  { const r = await member.rpc('checkin_open_now'); ok(!r.error && r.data.some((x) => x.event_id === evNow) && r.data.every((x) => !('code' in x)), 'a member sees which events have check-in open, without the code'); }
+  refused(await member.from('attendance').insert({ event_id: evNow, profile_id: m1.id, method: 'code' }).select(), 'a member cannot write attendance directly');
+  ok(/bad_code/.test(err(await member.rpc('check_in', { p_code: 'QQQQ', ...NEAR }))), 'a wrong code is refused');
+  ok(/need_location/.test(err(await member.rpc('check_in', { p_code: code }))), 'the right code without a location is refused when Must be here is on');
+  ok(/too_far:1\d{3}/.test(err(await member.rpc('check_in', { p_code: code, ...FAR }))), 'a brother about 1.1 km away is refused, and told how far');
+  ok(/location_vague/.test(err(await member.rpc('check_in', { p_code: code, ...NEAR, p_accuracy: 2500 }))), 'a location the phone is unsure of (2.5 km) is refused');
+  const inOk = await member.rpc('check_in', { p_code: code, ...NEAR });
+  ok(!err(inOk) && inOk.data?.already === false && inOk.data?.event_id === evNow, 'a brother 40 m away with the code checks in', err(inOk));
+  ok((await member.rpc('check_in', { p_code: code, ...NEAR })).data?.already === true, 'checking in twice just says he already did');
+  ok(!err(await peer.rpc('check_in', { p_code: ` ${code.slice(0, 2).toLowerCase()} ${code.slice(2)} `, ...NEAR })), 'the code works in lower case and with spaces');
+  { const { data } = await member.from('attendance').select('*'); ok(data?.length === 1 && data[0].profile_id === m1.id, 'a brother sees only his own attendance'); }
+  { const { data } = await adminUser.from('attendance').select('*').eq('event_id', evNow); ok(data?.length === 2, 'an officer sees everyone\'s attendance'); }
+  ok(/officers_only/.test(err(await member.rpc('checkin_status', { p_event: evNow }))), 'a member cannot see the code through the status call');
+  { const r = await adminUser.rpc('checkin_change', { p_event: evNow, p_action: 'new_code' }); ok(!r.error && r.data.code !== code, 'an officer makes a new code');
+    await adminUser.rpc('attendance_remove', { p_event: evNow, p_profile: m1.id });
+    ok(/bad_code/.test(err(await member.rpc('check_in', { p_code: code, ...NEAR }))), 'the old code stops working at once');
+    allowed(await adminUser.rpc('checkin_change', { p_event: evNow, p_action: 'location_off' }), 'an officer turns off Must be here');
+    ok(!err(await member.rpc('check_in', { p_code: r.data.code })), 'with it off, the new code works without a location'); }
+  sql('delete from private.checkin_misses');
+  for (let i = 0; i < 8; i++) await peer.rpc('check_in', { p_code: 'QQQQ' });
+  { const live = (await adminUser.rpc('checkin_status', { p_event: evNow })).data.code;
+    ok(/too_many_tries/.test(err(await peer.rpc('check_in', { p_code: live }))), 'after 8 wrong codes in 15 minutes, even the right code waits'); }
+  sql('delete from private.checkin_misses');
+  ok(/officers_only/.test(err(await member.rpc('attendance_add', { p_event: evNow, p_profile: other.id }))), 'a member cannot add someone to attendance');
+  await adminUser.rpc('attendance_remove', { p_event: evNow, p_profile: other.id });
+  allowed(await adminUser.rpc('attendance_add', { p_event: evNow, p_profile: other.id }), 'an officer adds a brother by hand');
+  { const { data } = await admin.from('attendance').select('*').eq('event_id', evNow).eq('profile_id', other.id).single(); ok(data?.method === 'added' && data?.added_by === ad.id, 'a hand-added check-in records which officer added it'); }
+  allowed(await adminUser.rpc('checkin_change', { p_event: evNow, p_action: 'close' }), 'an officer closes check-in');
+  { const live = (await admin.from('checkin_sessions').select('*').eq('event_id', evNow).single()).data;
+    ok(live.closed_at && live.lat === null && live.lng === null, 'closing check-in forgets where the officer was');
+    ok(/bad_code/.test(err(await peer.rpc('check_in', { p_code: live.code }))), 'once closed, the code no longer works'); }
+  // Holding a position (not just a committee) makes an officer, and leaving it ends that.
+  await adminUser.from('profile_teams').insert({ profile_id: m1.id, team_id: pos.id });
+  ok(!(await member.rpc('checkin_status', { p_event: evNow })).error, 'a brother given a position can run check-in');
+  { const { data } = await member.from('attendance').select('*').eq('event_id', evNow); ok(data?.length === 2, 'a position holder sees the event\'s attendance'); }
+  await adminUser.from('profile_teams').delete().eq('profile_id', m1.id).eq('team_id', pos.id);
+  ok(/officers_only/.test(err(await member.rpc('checkin_status', { p_event: evNow }))), 'taking the position away takes check-in away');
+  ok(/^0$/.test(sql("select count(*) from pg_policies where tablename = 'checkin_sessions'").trim()), 'the codes table has no rules at all, so only the functions reach it');
+  await admin.from('event_history').delete().like('id', `${TAG}%`);
+  await admin.from('events').delete().like('id', `${TAG}%`);
+
   await cleanup();
   console.log(`\n${passed}/${passed + failed} access checks passed.`);
   process.exitCode = failed ? 1 : 0;
