@@ -289,3 +289,41 @@ button.rowi { width: 100%; border: 0; border-bottom: 1px solid var(--line); back
 .ci-past { padding-top: 0.2rem; padding-bottom: 0.2rem; }
 .ci-past .ci-n { margin-left: 0.6rem; }
 .list-box { padding-top: 0.2rem; padding-bottom: 0.2rem; }
+
+/* ---------- Finances ---------- */
+#scene-finance { position: relative; --over: #c62f2a; }
+.fin-updated { margin: -0.5rem 0 0.9rem; font-size: 0.9rem; }
+.fin-notice { margin-bottom: 0.9rem; padding: 0.7rem 0.9rem; border-left: 4px solid var(--behind); background: var(--panel); border-radius: 0.5rem; font-size: 0.95rem; }
+.fin { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+.fin-card { padding: 1rem 1.1rem; }
+.fin-h { font-size: 1.1rem; font-weight: 900; }
+.fin-sub { margin-top: 0.2rem; font-size: 0.9rem; }
+.fin-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; margin-bottom: 0.8rem; }
+.fin-kpis b { display: block; margin-top: 0.15rem; font-size: 1.45rem; font-weight: 900; }
+.fin-splits { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.75rem; }
+@media (min-width: 760px) { .fin-splits { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.fin-split { display: flex; gap: 2px; height: 28px; margin: 0.75rem 0 0.7rem; }
+.fin-seg { display: flex; align-items: center; min-width: 0; padding-left: 0.4rem; border-radius: 4px; overflow: hidden; white-space: nowrap; font-size: 0.8rem; font-weight: 700; cursor: default; }
+.fin-seg:focus-visible, .fin-meter:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.fin-legend { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.3rem; margin: 0; padding: 0; list-style: none; font-size: 0.92rem; }
+.fin-legend li { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.fin-legend .sw { flex: none; width: 0.8rem; height: 0.8rem; border-radius: 3px; }
+.fin-lname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fin-lval { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fin-lines { margin: 0.6rem 0 0; padding: 0; list-style: none; }
+.fin-line { padding: 0.65rem 0; border-top: 1px solid var(--line); }
+.fin-line:first-child { border-top: 0; }
+.fin-top { display: flex; align-items: baseline; gap: 0.6rem; }
+.fin-name { flex: 1 1 auto; min-width: 0; font-weight: 700; }
+.fin-fig { flex: none; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+.fin-meter { position: relative; display: block; height: 8px; margin: 0.4rem 0 0.3rem; background: var(--track); border-radius: 999px; }
+.fin-meter-big { height: 14px; margin: 0; }
+.fin-fill { display: block; height: 100%; min-width: 0; background: var(--neutral); border-radius: 999px; }
+.fin-line.is-over .fin-fill, .fin-fill.is-over { background: var(--over); }
+.fin-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--text); border-radius: 1px; box-shadow: 0 0 0 1px var(--panel); }
+.fin-line.is-empty .fin-meter { opacity: 0.5; }
+.fin-status { font-size: 0.88rem; }
+.fin-over { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--text); }
+.fin-over .ico { width: 1rem; height: 1rem; flex: none; }
+.fin-tip { position: absolute; z-index: 5; max-width: min(20rem, calc(100% - 8px)); padding: 0.45rem 0.65rem; background: var(--text); color: var(--panel); border-radius: 0.5rem; font-size: 0.85rem; font-weight: 700; pointer-events: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2); }
+.fin-tip[hidden] { display: none; }

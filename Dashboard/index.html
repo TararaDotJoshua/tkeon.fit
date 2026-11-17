@@ -453,6 +453,7 @@
     <section class="scene" id="scene-goals" role="tabpanel" aria-labelledby="tab-goals" hidden><p class="empty">Loading…</p></section>
     <section class="scene" id="scene-board" role="tabpanel" aria-labelledby="tab-board" hidden><p class="empty">Loading…</p></section>
     <section class="scene" id="scene-quick" role="tabpanel" aria-labelledby="tab-quick" hidden><p class="empty">Loading…</p></section>
+    <section class="scene" id="scene-finance" role="tabpanel" aria-labelledby="tab-finance" hidden><p class="empty">Loading…</p></section>
     <section class="scene" id="scene-recruit" role="tabpanel" aria-labelledby="tab-recruit" hidden><p class="empty">Loading…</p></section>
     <section class="scene" id="scene-settings" aria-label="Settings" hidden><p class="empty">Loading…</p></section>
   </main>
@@ -499,6 +500,7 @@ const GROUPS = [
 if (!TV && !SAMPLE) {
   SCENES.push({ id: 'goals', label: 'Goals', group: 'metrics', app: true });
   SCENES.push({ id: 'board', label: 'Board', group: 'metrics', app: true });
+  SCENES.push({ id: 'finance', label: 'Finances', group: 'metrics', app: true, locked: 'member' }); // the chapter budget, for signed-in brothers
   SCENES.push({ id: 'quick', label: 'Quick access', group: 'quick', app: true }); // org chart, study hours
   SCENES.push({ id: 'recruit', label: 'Recruitment', group: 'recruit', app: true, locked: true }); // only for brothers an admin let in
   SCENES.push({ id: 'settings', label: 'Settings', app: true, noTab: true }); // opened from the profile photo
@@ -1165,6 +1167,8 @@ function sceneFrom(value) {
 
 function openMenu(screens, btn) {
   const menu = $('metrics-menu');
+  const html = document.documentElement;
+  screens = screens.filter(function (s) { return s.locked !== 'member' || html.classList.contains('is-member'); });
   const cur = SCENES[state.scene].id;
   menu.innerHTML = screens.map(function (s) {
     const on = s.id === cur;
@@ -1415,6 +1419,7 @@ window.DASH = {
   data: function () { return state.data; },
   scene: function () { return SCENES[state.scene].id; },
   show: function (id) { showScene(sceneFrom(id), { fromUser: true }); },
+  setMember: function (on) { document.documentElement.classList.toggle('is-member', Boolean(on)); },
   setRecruit: function (on) { document.documentElement.classList.toggle('can-recruit', Boolean(on)); },
   closeEvent: function () { closeEvent(); },
   eventExtra: null, // set by Dashboard/app/checkin.js

@@ -1,4 +1,4 @@
--- Hourly trigger for the dashboard sync.
+-- Triggers for the dashboard sync (hourly) and the budget sync (every 5 minutes).
 -- Run once in the Supabase SQL editor. It is safe to run again.
 --
 -- GitHub's own cron is best-effort and was firing every 6 to 9 hours on this
@@ -31,6 +31,39 @@ select cron.schedule(
     end if;
     perform net.http_post(
       url := 'https://api.github.com/repos/TararaDotJoshua/tkeon.fit/actions/workflows/dashboard-sync.yml/dispatches',
+      body := '{"ref":"main"}'::jsonb,
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer ' || token,
+        'Accept', 'application/vnd.github+json',
+        'X-GitHub-Api-Version', '2022-11-28',
+        'User-Agent', 'tkeon-dashboard',
+        'Content-Type', 'application/json'
+      ),
+      timeout_milliseconds := 10000
+    );
+  end
+  $job$;
+  $cron$
+);
+
+-- The budget for the Finances screen: every 5 minutes, start the light
+-- budget-sync workflow (it reads the Treasurer's Sheet; no browser). Same token.
+select cron.schedule(
+  'budget-sync-5min',
+  '*/5 * * * *',
+  $cron$
+  do $job$
+  declare
+    token text;
+  begin
+    select decrypted_secret into token
+    from vault.decrypted_secrets
+    where name = 'github_dispatch_token';
+    if token is null then
+      raise exception 'Vault secret github_dispatch_token is missing; the budget sync was not started.';
+    end if;
+    perform net.http_post(
+      url := 'https://api.github.com/repos/TararaDotJoshua/tkeon.fit/actions/workflows/budget-sync.yml/dispatches',
       body := '{"ref":"main"}'::jsonb,
       headers := jsonb_build_object(
         'Authorization', 'Bearer ' || token,
