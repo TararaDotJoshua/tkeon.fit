@@ -312,7 +312,7 @@ async function main() {
   const dcard = dp.locator('.icard', { hasText: 'E2E Book venue' });
   await dcard.waitFor();
   ok(await dp.locator('.col').evaluateAll((els) => els.every((el) => el.getBoundingClientRect().right <= innerWidth)), 'desktop: all columns fit side by side');
-  ok(await dp.locator('#ranks-m .rk').isVisible(), 'desktop: rankings still show on every screen');
+  ok(!(await dp.locator('#ranks-m').isVisible()), 'desktop: no rankings on the Board');
   ok(await dp.locator('#tabs .tab:not(.needs-recruit)').count() === 3 && await dp.locator('#tabs').evaluate((el) => getComputedStyle(el).position !== 'fixed') && !(await dp.locator('#gtabs').isVisible()), 'desktop: three tabs across the top (Metrics, This week, Quick access), no bottom bar');
   ok(/Metrics · Board/.test(await dp.locator('#tab-metrics').innerText()), 'desktop: the Metrics tab names the screen it shows');
   await dp.locator('#tab-metrics').click();
@@ -322,6 +322,13 @@ async function main() {
   await dp.keyboard.press('Enter');
   await dp.locator('#scene-goals').waitFor({ state: 'hidden' }).catch(() => {});
   ok(await dp.locator('#metrics-menu').isHidden(), 'desktop: the menu works from the keyboard');
+  await metrics(dp, 'kras');
+  await dp.locator('#ranks-m .rk').first().waitFor({ timeout: 5000 }).catch(() => {});
+  ok(await dp.locator('#ranks-m .rk').first().isVisible(), 'desktop: rankings show with the scoreboard');
+  await metrics(dp, 'required');
+  ok(await dp.locator('#ranks-m .rk').first().isVisible(), 'desktop: rankings show with Required & bonus');
+  await dp.locator('#tab-week').click();
+  ok(!(await dp.locator('#ranks-m').isVisible()), 'desktop: no rankings on This week');
   await dp.goto(BASE + '#board');
   await dcard.waitFor();
   await dcard.scrollIntoViewIfNeeded();
