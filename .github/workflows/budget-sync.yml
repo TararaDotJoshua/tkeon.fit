@@ -1,0 +1,72 @@
+name: Budget sync
+
+# The Treasurer's budget Sheet -> Supabase, for the Finances screen on
+# tkeon.fit/Dashboard. Reads only the "Chapter Expenses" table, as a robot
+# (a Google service account) the Sheet is shared with; nothing is published.
+#
+# supabase/schedule.sql starts this every 5 minutes through workflow_dispatch
+# (once the Finances screen is live). Run it by hand with "dry run" to check
+# the robot can read the Sheet without writing anything.
+#
+# This repo is public, and so are these logs: budget.mjs never prints the
+# Sheet's link or any amount, only how many lines it read.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Read the Sheet and count the lines, but write nothing
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: budget-sync
+  cancel-in-progress: false
+
+jobs:
+  budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: sync
+    steps:
+      - name: Check setup
+        id: setup
+        working-directory: .
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ] || [ -z "$BUDGET_SHEET_URL" ] || [ -z "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::notice::Budget sync is not set up yet. Add the BUDGET_SHEET_URL and GOOGLE_SERVICE_ACCOUNT_JSON secrets. Skipping this run."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUDGET_SHEET_URL: ${{ secrets.BUDGET_SHEET_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+
+      - uses: actions/checkout@v7
+        if: steps.setup.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v7
+        if: steps.setup.outputs.ready == 'true'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: sync/package-lock.json
+
+      - run: npm ci --omit=dev --ignore-scripts
+        if: steps.setup.outputs.ready == 'true'
+
+      - name: Read the budget Sheet
+        if: steps.setup.outputs.ready == 'true'
+        run: node budget.mjs ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BUDGET_SHEET_URL: ${{ secrets.BUDGET_SHEET_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
