@@ -499,6 +499,7 @@ async function main() {
   await vis.locator('[data-quick="org"]').click();
   ok(/Prytanis/.test(await sheet(vis).locator('.oc-top').innerText()), 'org chart: the top position sits at the top');
   ok(await sheet(vis).locator('.oc-card', { hasText: 'Rush Chairman' }).locator('.oc-name', { hasText: 'Blake Member' }).count() === 1, 'org chart: shows who holds each position, from Settings');
+  ok(!/Committee/.test(await sheet(vis).locator('.org').innerText()), 'org chart: committees are left off');
   await noSideScroll(vis, 'org chart');
   await shot(vis, 'phone-org-chart');
   await sheet(vis).locator('[data-sheet="close"]').click();

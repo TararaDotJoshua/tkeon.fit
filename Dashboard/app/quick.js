@@ -1,5 +1,5 @@
 // The Quick access tab: big buttons for things brothers reach for often.
-//  - Org chart: who holds each position and committee (public, like positions already are).
+//  - Org chart: who holds each position (public, like positions already are).
 //  - Study hours: each brother logs his own, by hand or with a timer. He sees only
 //    his own; admins also see the whole chapter. The database enforces both.
 
@@ -142,13 +142,11 @@ export function openOrgChart() {
   const live = S.teams.filter((t) => !t.archived_at);
   const tier = (name) => live.filter((t) => t.kind === 'position' && (t.chart || 'chair') === name);
   const head = tier('head'), exec = tier('exec'), chairs = tier('chair');
-  const committees = live.filter((t) => t.kind === 'committee');
   const group = (label, list) => (list.length ? `<section class="oc-tier"><h3 class="eyebrow oc-label">${label}</h3><div class="oc-grid">${list.map((t) => ocCard(t)).join('')}</div></section>` : '');
-  const html = live.length
+  const html = head.length + exec.length + chairs.length
     ? `${head.length ? `<section class="oc-tier oc-top">${head.map((t) => ocCard(t, true)).join('')}</section>` : ''}
        ${group('Executive board', exec)}
        ${group('Chairmen', chairs)}
-       ${group('Committees', committees)}
        ${isAdmin() ? '<p class="muted small-text oc-note">Admins: give brothers positions in Settings › Members. Move a position between the top, the executive board and the chairmen in Settings › Positions and committees.</p>' : ''}`
     : '<p class="empty">No positions yet. An admin adds them in Settings.</p>';
   openSheet({ title: 'Org chart', html: `<div class="org">${html}</div>` });
