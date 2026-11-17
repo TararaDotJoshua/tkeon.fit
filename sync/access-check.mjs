@@ -42,6 +42,7 @@ async function cleanup() {
   await admin.from('teams').delete().like('name', `${TAG}%`);
   await admin.from('board_columns').delete().like('name', `${TAG}%`);
   await admin.from('custom_fields').delete().like('name', `${TAG}%`);
+  await admin.from('budget_lines').delete().like('name', `${TAG}%`);
   const { data: pnms } = await admin.from('pnms').select('id, photo_path').or('email.like.%.test@%,name.like.ACCESS-TEST%');
   for (const p of pnms || []) if (p.photo_path) await admin.storage.from('pnm-photos').remove([p.photo_path]);
   if (pnms?.length) await admin.from('pnms').delete().in('id', pnms.map((p) => p.id));
@@ -281,6 +282,26 @@ async function main() {
   refused(await adminUser.from('teams').update({ chart: 'boss' }).eq('id', pos.id).select(), 'an unknown org chart place is refused');
   allowed(await adminUser.from('teams').update({ chart: 'exec' }).eq('id', pos.id).select().single(), 'admin can move a position on the org chart');
   await adminUser.from('teams').update({ chart: 'head' }).eq('id', pos.id);
+
+  // ---- Finances: the budget from the Treasurer's Sheet --------------------------------
+  // Only the sync (service role) writes it; every signed-in brother reads it.
+  const lineName = `${TAG} line`;
+  allowed(await admin.from('budget_lines').upsert({ name: lineName, budgeted: 100, spent: 40, sort: 999 }).select().single(), 'the sync can write a budget line');
+  allowed(await admin.from('budget_sync').upsert({ id: true, synced_at: new Date().toISOString(), tried_at: new Date().toISOString(), problem: null }).select().single(), 'the sync can record when it read the Sheet');
+  refused(await anon.from('budget_lines').select('*'), 'visitor cannot read the budget');
+  refused(await anon.from('budget_sync').select('*'), 'visitor cannot read when the budget synced');
+  { const { data } = await member.from('budget_lines').select('*').eq('name', lineName); ok(data?.length === 1 && Number(data[0].spent) === 40, 'a signed-in brother reads the budget'); }
+  { const { data } = await member.from('budget_sync').select('*'); ok(data?.length === 1, 'a signed-in brother sees when the budget synced'); }
+  refused(await member.from('budget_lines').insert({ name: `${TAG} sneaky`, budgeted: 1, spent: 0 }).select(), 'a brother cannot add a budget line');
+  refused(await member.from('budget_lines').update({ spent: 0 }).eq('name', lineName).select(), 'a brother cannot change a budget line');
+  refused(await adminUser.from('budget_lines').update({ budgeted: 1e6 }).eq('name', lineName).select(), 'not even an admin can change the budget from the app');
+  refused(await adminUser.from('budget_lines').delete().eq('name', lineName).select(), 'an admin cannot delete a budget line from the app');
+  refused(await member.from('budget_sync').update({ problem: 'x' }).eq('id', true).select(), 'a brother cannot change the sync status');
+  allowed(await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: true }), 'admin turns the member off');
+  { const { data } = await member.from('budget_lines').select('*'); ok(Array.isArray(data) && data.length === 0, 'a turned-off account cannot read the budget'); }
+  await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: false });
+  ok(/^0$/.test(sql("select count(*) from pg_policies where tablename in ('budget_lines', 'budget_sync') and 'anon' = any(roles)").trim()), 'no budget rule mentions visitors at all');
+  await admin.from('budget_lines').delete().eq('name', lineName);
 
   // ---- Event check-in -------------------------------------------------------------
   // adminUser is an officer (admins are); member (m1) is on a committee only; peer is a plain member.

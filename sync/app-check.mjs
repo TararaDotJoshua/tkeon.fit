@@ -35,6 +35,7 @@ async function cleanup() {
   await admin.from('event_history').delete().like('title', 'E2E%'); // takes its check-ins with it
   await admin.from('events').delete().like('title', 'E2E%');
   await admin.from('teams').delete().like('name', 'E2E%');
+  await admin.from('budget_lines').delete().like('name', 'E2E%');
   const { data: pnms } = await admin.from('pnms').select('id, photo_path').like('email', '%.test@%');
   for (const p of pnms || []) if (p.photo_path) await admin.storage.from('pnm-photos').remove([p.photo_path]);
   if (pnms?.length) await admin.from('pnms').delete().in('id', pnms.map((p) => p.id));
@@ -512,6 +513,14 @@ async function main() {
   await sheet(vis).locator('[data-sheet="close"]').click();
   await vis.locator('[data-quick="study"]').click();
   ok(await sheet(vis).locator('[name="scroll"]').count() === 1, 'study hours: a visitor is sent to sign in first');
+  await sheet(vis).locator('[data-sheet="close"]').click();
+  await vis.locator('#gtab-metrics').click();
+  await vis.locator('#metrics-menu .menu-item').first().waitFor();
+  ok(await vis.locator('#metrics-menu [data-scene="finance"]').count() === 0, 'finances: a visitor\'s Metrics menu has no Finances');
+  await vis.keyboard.press('Escape');
+  await vis.goto(BASE + '#finance');
+  await vis.locator('#scene-finance .empty').waitFor();
+  ok(/Sign in/.test(await vis.locator('#scene-finance').innerText()) && await vis.locator('#scene-finance .fin-line').count() === 0, 'finances: a visitor who opens the link is asked to sign in and sees no numbers');
   await vis.context().close();
 
   // Blake times a study session, closes the app, and logs it.
@@ -535,6 +544,39 @@ async function main() {
   ok(await sheet(p2).locator('.st-chapter').count() === 0, 'study hours: a regular brother sees only his own');
   await shot(p2, 'phone-study-hours');
   await sheet(p2).locator('[data-sheet="close"]').click();
+
+  // ---- Finances: the budget, for every signed-in brother --------------------------
+  await admin.from('budget_lines').upsert([
+    { name: 'E2E Rush', budgeted: 100, spent: 130, sort: 901 },
+    { name: 'E2E Social', budgeted: 200, spent: 50, sort: 902 },
+    { name: 'E2E Composite', budgeted: 0, spent: 25, sort: 903 },
+  ]);
+  await admin.from('budget_sync').upsert({ id: true, synced_at: new Date().toISOString(), tried_at: new Date().toISOString(), problem: null });
+  await p2.locator('#gtab-metrics').click();
+  ok(/Board\s*Finances/.test(await p2.locator('#metrics-menu').innerText()), 'finances: a signed-in brother finds it in the Metrics menu, after Board');
+  await p2.locator('#metrics-menu [data-scene="finance"]').click();
+  ok(/Finances/.test(await p2.locator('#gtab-metrics').innerText()) || await p2.locator('#scene-finance').isVisible(), 'finances: opens from the menu');
+  const rush = p2.locator('#scene-finance .fin-line', { hasText: 'E2E Rush' });
+  await rush.waitFor();
+  ok(/Over by \$30\.00/.test(await rush.innerText()) && await rush.locator('.fin-mark').count() === 1, 'finances: a line past its budget says by how much and marks the budget');
+  ok(/\$150\.00 left/.test(await p2.locator('#scene-finance .fin-line', { hasText: 'E2E Social' }).innerText()), 'finances: a line under budget shows what is left');
+  ok(/Not budgeted/.test(await p2.locator('#scene-finance .fin-line', { hasText: 'E2E Composite' }).innerText()), 'finances: spending on a line with no budget is flagged');
+  ok(await p2.locator('#scene-finance .fin-split').count() === 2 && await p2.locator('#scene-finance .fin-legend li').count() >= 2, 'finances: both splits draw, each with a legend');
+  ok(/updated just now|updated \d+ min ago/.test(await p2.locator('#scene-finance .fin-updated').innerText()), 'finances: says when the Sheet was last read');
+  await p2.locator('#scene-finance .fin-seg').first().click();
+  ok(await p2.locator('#scene-finance .fin-tip').isVisible(), 'finances: tapping a part of a split shows its name and amount');
+  await noSideScroll(p2, 'finances');
+  await shot(p2, 'phone-finances');
+  await admin.from('budget_sync').upsert({ id: true, tried_at: new Date(Date.now() + 1000).toISOString(), problem: 'test problem' });
+  await p2.reload();
+  await metrics(p2, 'finance');
+  await p2.locator('#scene-finance .fin-notice').waitFor();
+  ok(/couldn't be read/.test(await p2.locator('#scene-finance .fin-notice').innerText()) && await p2.locator('#scene-finance .fin-line', { hasText: 'E2E Rush' }).count() === 1, 'finances: when the Sheet can\'t be read it says so and keeps the last numbers');
+  ok(!/test problem/.test(await p2.locator('#scene-finance .fin-notice').innerText()), 'finances: a regular brother doesn\'t see the technical reason');
+  await admin.from('budget_sync').upsert({ id: true, tried_at: new Date().toISOString(), synced_at: new Date().toISOString(), problem: null });
+  await admin.from('budget_lines').delete().like('name', 'E2E%');
+  await p2.locator('#gtab-quick').click();
+  await p2.locator('[data-quick="study"]', { hasText: 'This week 1.5 h' }).waitFor({ timeout: 8000 }).catch(() => {});
   ok(/This week 1\.5 h/.test(await p2.locator('[data-quick="study"]').innerText()), 'quick access: the tile shows his week');
   await noSideScroll(p2, 'Quick access');
 

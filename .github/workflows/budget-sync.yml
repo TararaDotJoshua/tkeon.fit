@@ -4,13 +4,15 @@ name: Budget sync
 # tkeon.fit/Dashboard. Reads only the "Chapter Expenses" table, as a robot
 # (a Google service account) the Sheet is shared with; nothing is published.
 #
-# supabase/schedule.sql starts this every 5 minutes through workflow_dispatch
-# (once the Finances screen is live). Run it by hand with "dry run" to check
-# the robot can read the Sheet without writing anything.
+# supabase/schedule.sql starts this every 5 minutes through workflow_dispatch.
+# The schedule below is only a slow backup for when that trigger stops. Run it
+# by hand with "dry run" to check the robot can read the Sheet without writing.
 #
 # This repo is public, and so are these logs: budget.mjs never prints the
 # Sheet's link or any amount, only how many lines it read.
 on:
+  schedule:
+    - cron: "52 */3 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
