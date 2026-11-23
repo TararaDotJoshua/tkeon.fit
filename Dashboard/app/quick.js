@@ -2,11 +2,13 @@
 //  - Org chart: who holds each position (public, like positions already are).
 //  - Study hours: each brother logs his own, by hand or with a timer. He sees only
 //    his own; admins also see the whole chapter. The database enforces both.
+//  - Event check-in (checkin.js) and refund requests (refunds.js).
 
 import { $, DAY, confirmSheet, esc, field, fmtDate, formData, openSheet, toast, today, ymd } from './ui.js';
 import { S, sb, avatar, isAdmin, isMember, profile, write } from './store.js';
 import { asMember } from './auth.js';
 import { loadOpenNow, openCheckin, openNow } from './checkin.js';
+import { loadRefunds, openRefunds, refundTileSub } from './refunds.js';
 
 const D = window.DASH;
 const TIMER_KEY = 'tkeon-study-timer';
@@ -75,6 +77,7 @@ const clock = (ms) => {
 const ICONS = {
   org: '<rect x="9" y="2.5" width="6" height="5" rx="1"/><rect x="2.5" y="16.5" width="6" height="5" rx="1"/><rect x="9" y="16.5" width="6" height="5" rx="1"/><rect x="15.5" y="16.5" width="6" height="5" rx="1"/><path d="M12 7.5v4.5M5.5 16.5V12h13v4.5M12 12v4.5"/>',
   checkin: '<rect x="3" y="4.5" width="18" height="16.5" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M8.5 15.5l2.4 2.4 4.6-4.8"/>',
+  refund: '<path d="M6 2.5h12v19l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4-2 1.4z"/><path d="M9.5 7.5h5M9.5 11h5M12 13.5v4M10.3 15.8c.4.5 1 .8 1.7.8.9 0 1.7-.5 1.7-1.3 0-1.7-3.4-1-3.4-2.7 0-.7.7-1.2 1.6-1.2.7 0 1.2.3 1.6.7"/>',
   study: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M8 7h8M8 11h6"/>',
 };
 const tile = (id, title, sub) => `<button class="panel qtile" type="button" data-quick="${id}">
@@ -109,16 +112,19 @@ export function renderQuick() {
       ${tile('checkin', 'Event check-in', checkinSub)}
       ${tile('org', 'Org chart', S.loaded ? `${filled} of ${positions.length} positions filled` : 'Loading…')}
       ${tile('study', 'Study hours', studySub)}
+      ${tile('refund', 'Refund request', refundTileSub())}
     </div>`;
   clearInterval(tileTick);
   if (timer) tileTick = setInterval(() => { const c = $('#scene-quick [data-clock]'); if (!c || $('#scene-quick').hidden) return clearInterval(tileTick); c.textContent = clock(Date.now() - timer.start); }, 1000);
 }
 
+document.addEventListener('dash:refunds', () => { if (D.scene() === 'quick') renderQuick(); });
 document.addEventListener('click', (e) => {
   const go = e.target.closest('#scene-quick [data-quick]')?.dataset.quick;
   if (go === 'org') openOrgChart();
   if (go === 'study') asMember(openStudy);
   if (go === 'checkin') asMember(() => openCheckin());
+  if (go === 'refund') asMember(openRefunds);
 });
 
 // ---------- Org chart ----------
