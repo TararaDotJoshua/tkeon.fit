@@ -36,6 +36,9 @@ async function cleanup() {
   await admin.from('events').delete().like('title', 'E2E%');
   await admin.from('teams').delete().like('name', 'E2E%');
   await admin.from('budget_lines').delete().like('name', 'E2E%');
+  { const { data: rr } = await admin.from('refund_requests').select('receipt_path').like('what_for', 'E2E%');
+    if (rr?.length) await admin.storage.from('receipts').remove(rr.map((r) => r.receipt_path));
+    await admin.from('refund_requests').delete().like('what_for', 'E2E%'); }
   const { data: pnms } = await admin.from('pnms').select('id, photo_path').like('email', '%.test@%');
   for (const p of pnms || []) if (p.photo_path) await admin.storage.from('pnm-photos').remove([p.photo_path]);
   if (pnms?.length) await admin.from('pnms').delete().in('id', pnms.map((p) => p.id));
@@ -579,6 +582,69 @@ async function main() {
   await p2.locator('[data-quick="study"]', { hasText: 'This week 1.5 h' }).waitFor({ timeout: 8000 }).catch(() => {});
   ok(/This week 1\.5 h/.test(await p2.locator('[data-quick="study"]').innerText()), 'quick access: the tile shows his week');
   await noSideScroll(p2, 'Quick access');
+
+  // ---- Refund requests: Blake files one; the Crysophylos reviews it -----------------
+  ok(/Refund request/.test(await p2.locator('[data-quick="refund"]').innerText()), 'refunds: Quick access has a Refund request tile');
+  await p2.locator('[data-quick="refund"]').click();
+  await sheet(p2).locator('[data-rf="new"]').click();
+  await sheet(p2).locator('[name="amount"]').waitFor();
+  await sheet(p2).locator('[data-sheet="primary"]').click();
+  ok(/photo of the receipt/.test(await sheet(p2).locator('.form-error').innerText()), 'refunds: a request needs a receipt photo');
+  await sheet(p2).locator('[name="receipt"]').setInputFiles(path.resolve('../Dashboard/icons/icon-512.png'));
+  await sheet(p2).locator('#rf-prev img').waitFor();
+  await sheet(p2).locator('[name="amount"]').fill('abc');
+  await sheet(p2).locator('[name="what_for"]').fill('E2E ice and cups');
+  await sheet(p2).locator('[name="pay_to"]').fill('Venmo @blake-e2e');
+  await sheet(p2).locator('[data-sheet="primary"]').click();
+  ok(/amount on the receipt/.test(await sheet(p2).locator('.form-error').innerText()), "refunds: an amount that isn't a number is caught");
+  await sheet(p2).locator('[name="amount"]').fill('$24.99');
+  if (await sheet(p2).locator('[name="committee"] option').count() > 1) await sheet(p2).locator('[name="committee"]').selectOption({ index: 1 });
+  await noSideScroll(p2, 'refund form');
+  await shot(p2, 'phone-refund-form');
+  await sheet(p2).locator('[data-sheet="primary"]').click();
+  const myRow = sheet(p2).locator('.rf-row', { hasText: 'E2E ice and cups' });
+  await myRow.waitFor();
+  ok(/\$24\.99/.test(await myRow.innerText()) && /Submitted/.test(await myRow.innerText()), 'refunds: the request shows in his list as Submitted');
+  { const { data } = await admin.from('refund_requests').select('amount, pay_to, status, receipt_path').like('what_for', 'E2E ice%').single();
+    const file = data && await admin.storage.from('receipts').download(data.receipt_path);
+    ok(Number(data?.amount) === 24.99 && data?.pay_to === 'Venmo @blake-e2e' && file?.data?.type === 'image/jpeg', 'refunds: saved with the amount, payment and the receipt as a JPEG'); }
+  await shot(p2, 'phone-refunds-mine');
+  await myRow.click();
+  await sheet(p2).locator('.rf-receipt img').waitFor();
+  ok(await sheet(p2).locator('[data-rf="withdraw"]').count() === 1 && await sheet(p2).locator('[data-set]').count() === 0, 'refunds: he can withdraw it while Submitted, and cannot set its status');
+  await closeSheets(p2);
+
+  // The admin account takes the Crysophylos position for this check.
+  const adminId = (await admin.auth.admin.listUsers({ perPage: 1000 })).data.users.find((u) => u.email === 'admin.test@fit.edu').id;
+  const crysoId = (await admin.from('teams').select('id, name').eq('kind', 'position')).data.find((t) => /^crysophylos/i.test(t.name)).id;
+  await admin.from('profile_teams').insert({ profile_id: adminId, team_id: crysoId });
+  await page.reload();
+  await page.locator('#gtab-quick').click();
+  await page.locator('[data-quick="refund"]', { hasText: '1 new' }).waitFor({ timeout: 8000 }).catch(() => {});
+  ok(/1 new/.test(await page.locator('[data-quick="refund"]').innerText()), "refunds: the Crysophylos's tile counts new requests");
+  await page.locator('[data-quick="refund"]').click();
+  const theirRow = sheet(page).locator('.rf-row', { hasText: 'E2E ice and cups' });
+  await theirRow.waitFor();
+  ok(/Blake Member/.test(await theirRow.innerText()), 'refunds: the Crysophylos sees who sent it');
+  await theirRow.click();
+  await sheet(page).locator('.rf-receipt img').waitFor();
+  ok(await sheet(page).locator('.rf-receipt img').evaluate((img) => img.complete && img.naturalWidth > 0) && /Venmo @blake-e2e/.test(await sheet(page).locator('.rf-facts').innerText()), 'refunds: he sees the receipt photo and how to pay Blake');
+  await sheet(page).locator('[data-set="in_review"]').click();
+  await sheet(page).locator('[data-set="in_review"][aria-checked="true"]').waitFor();
+  ok(/In review/.test(await sheet(page).locator('.rf-status').innerText()), 'refunds: the Crysophylos marks it In review');
+  await noSideScroll(page, 'refund review');
+  await shot(page, 'phone-refund-review');
+  await closeSheets(page);
+  await admin.from('profile_teams').delete().eq('profile_id', adminId).eq('team_id', crysoId);
+  await p2.reload();
+  await p2.locator('#gtab-quick').click();
+  await p2.locator('[data-quick="refund"]', { hasText: 'In review' }).waitFor({ timeout: 8000 }).catch(() => {});
+  ok(/\$24\.99 request · In review/.test(await p2.locator('[data-quick="refund"]').innerText()), "refunds: Blake's tile shows it In review");
+  await p2.locator('[data-quick="refund"]').click();
+  await sheet(p2).locator('.rf-row', { hasText: 'E2E ice and cups' }).click();
+  await sheet(p2).locator('.rf-status').waitFor();
+  ok(await sheet(p2).locator('[data-rf="withdraw"]').count() === 0, 'refunds: once it is In review he can no longer withdraw it');
+  await closeSheets(p2);
 
   // The admin sees the whole chapter, and can move a position on the chart.
   await page.locator('#gtab-quick').click();

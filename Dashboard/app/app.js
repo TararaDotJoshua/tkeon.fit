@@ -11,6 +11,7 @@ import { loadStudy, openOrgChart, openStudy, renderQuick, resetStudy } from './q
 import { asMember } from './auth.js';
 import { loadOpenNow, openCheckin, renderWeekExtra } from './checkin.js';
 import { financeAge, loadFinance, renderFinance, resetFinance } from './finance.js';
+import { loadRefunds, openRefunds, resetRefunds } from './refunds.js';
 
 const D = window.DASH;
 
@@ -25,7 +26,7 @@ function render() {
   if (who !== recruitFor) { recruitFor = who; resetRecruit(); if (who) loadRecruit(); }
   // Study hours belong to whoever is signed in; drop them when that changes.
   const me = S.profile && !S.profile.disabled ? S.user.id : null;
-  if (me !== studyFor) { studyFor = me; resetStudy(); }
+  if (me !== studyFor) { studyFor = me; resetStudy(); resetRefunds(); }
   // The budget is for signed-in brothers only: drop it when they sign out.
   D.setMember(isMember());
   if (me !== financeFor) { financeFor = me; resetFinance(); }
@@ -46,6 +47,7 @@ let recruitFetched = 0;
 document.addEventListener('dash:scene', (e) => {
   if (e.detail === 'recruit' && canRecruit() && Date.now() - recruitFetched > 10e3) { recruitFetched = Date.now(); loadRecruit(); }
   if (e.detail === 'quick' && studyFor) loadStudy(); // hours logged on another device show up
+  if (e.detail === 'quick' && studyFor) loadRefunds(); // new requests, or a status the Treasurer changed
   if (e.detail === 'finance' && financeFor && Date.now() - financeAge() > 30e3) loadFinance(); // the Sheet may have changed
   if (e.detail === 'quick' && studyFor) loadOpenNow(true).then(() => { if (D.scene() === 'quick') renderQuick(); }); // check-in just opened
 });
@@ -64,6 +66,7 @@ function openDeepLink() {
   if (scene === 'recruit' && canRecruit()) loadRecruit().then(() => openPnm(id));
   if (scene === 'quick' && id === 'org') openOrgChart();
   if (scene === 'quick' && id === 'study') asMember(openStudy);
+  if (scene === 'quick' && id === 'refund') asMember(openRefunds);
 }
 onChange(openDeepLink);
 // A check-in link opened while the app is already running.

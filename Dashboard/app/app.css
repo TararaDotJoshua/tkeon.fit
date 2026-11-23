@@ -327,3 +327,28 @@ button.rowi { width: 100%; border: 0; border-bottom: 1px solid var(--line); back
 .fin-over .ico { width: 1rem; height: 1rem; flex: none; }
 .fin-tip { position: absolute; z-index: 5; max-width: min(20rem, calc(100% - 8px)); padding: 0.45rem 0.65rem; background: var(--text); color: var(--panel); border-radius: 0.5rem; font-size: 0.85rem; font-weight: 700; pointer-events: none; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2); }
 .fin-tip[hidden] { display: none; }
+
+/* ---------- Refund requests ---------- */
+.rf-how { margin: 0.5rem 0 1rem; }
+.rf-h { margin: 0.4rem 0 0.5rem; color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.rf-empty { margin: 0 0 1rem; }
+.rf-amt { font-variant-numeric: tabular-nums; margin-right: 0.25rem; }
+.rf-row .st { margin-left: 0.25rem; }
+.rf-st .ico { width: 1rem; height: 1rem; flex: none; }
+.rf-pick { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.rf-pick input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.rf-pick label.btn { position: relative; overflow: hidden; }
+.rf-prev { display: flex; align-items: center; justify-content: center; width: 6.5rem; height: 8.5rem; flex: none; overflow: hidden; border: 1px dashed var(--line); border-radius: 0.6rem; background: var(--panel-2); }
+.rf-prev img { width: 100%; height: 100%; object-fit: cover; }
+.rf-ph { padding: 0.5rem; color: var(--faint); font-size: 0.8rem; text-align: center; }
+.rf-receipt { display: flex; justify-content: center; min-height: 8rem; margin-bottom: 0.9rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2); }
+.rf-receipt img { display: block; max-width: 100%; max-height: 60vh; border-radius: 0.4rem; }
+.rf-receipt .rf-ph { align-self: center; }
+.rf-status { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.7rem; }
+.rf-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.45rem 1rem; margin: 0; }
+.rf-facts dt { color: var(--muted); font-size: 0.85rem; font-weight: 700; }
+.rf-facts dd { margin: 0; word-wrap: break-word; }
+.rf-seg { margin-bottom: 0.5rem; }
+.rf-seg .seg-b[aria-checked="true"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
+.rf-seg .seg-b:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
+.danger-text { color: var(--cherry); }

@@ -43,6 +43,7 @@ async function cleanup() {
   await admin.from('board_columns').delete().like('name', `${TAG}%`);
   await admin.from('custom_fields').delete().like('name', `${TAG}%`);
   await admin.from('budget_lines').delete().like('name', `${TAG}%`);
+  await admin.from('refund_requests').delete().like('what_for', `${TAG}%`);
   const { data: pnms } = await admin.from('pnms').select('id, photo_path').or('email.like.%.test@%,name.like.ACCESS-TEST%');
   for (const p of pnms || []) if (p.photo_path) await admin.storage.from('pnm-photos').remove([p.photo_path]);
   if (pnms?.length) await admin.from('pnms').delete().in('id', pnms.map((p) => p.id));
@@ -303,6 +304,65 @@ async function main() {
   ok(/^0$/.test(sql("select count(*) from pg_policies where tablename in ('budget_lines', 'budget_sync') and 'anon' = any(roles)").trim()), 'no budget rule mentions visitors at all');
   await admin.from('budget_lines').delete().eq('name', lineName);
 
+  const err = (res) => `${res.error?.message || res.data?.error || ''}`;
+  // ---- Refund requests ---------------------------------------------------------------
+  // A brother files his own; only the Prytanis and Crysophylos see everyone's and set
+  // the status. Admins are not reviewers. Receipts are private photos.
+  const rjpg = new Blob([new Uint8Array(400)], { type: 'image/jpeg' });
+  const rPath = `${m1.id}/${TAG}-r1.jpg`, rPath2 = `${m1.id}/${TAG}-r2.jpg`;
+  const posId = async (re) => (await admin.from('teams').select('id, name').eq('kind', 'position').is('archived_at', null)).data.find((t) => re.test(t.name))?.id;
+  const cryso = await posId(/^crysophylos/i), epi = await posId(/^epiprytanis/i);
+  const rCommittee = (await admin.from('teams').insert({ kind: 'committee', name: `${TAG} refunds committee`, sort: 998 }).select().single()).data;
+  refused(await anon.from('refund_requests').select('*'), 'visitor cannot read refund requests');
+  refused(await anon.from('refund_requests').insert({ amount: 5, what_for: 'x', pay_to: 'x', receipt_path: 'x/y.jpg' }).select(), 'visitor cannot file a refund request');
+  { const r = await anon.storage.from('receipts').upload(`${m1.id}/anon.jpg`, rjpg); ok(Boolean(r.error), 'visitor cannot upload a receipt'); }
+  allowed(await member.storage.from('receipts').upload(rPath, rjpg), 'a brother uploads a receipt into his own folder');
+  { const r = await member.storage.from('receipts').upload(`${other.id}/${TAG}-x.jpg`, rjpg); ok(Boolean(r.error), "a brother cannot upload into someone else's receipt folder"); }
+  { const r = await member.storage.from('receipts').upload(rPath, rjpg, { upsert: true }); ok(Boolean(r.error), 'a receipt cannot be replaced after upload'); }
+  const req1 = await member.from('refund_requests').insert({ amount: 24.99, what_for: `${TAG} ice and cups`, committee_id: rCommittee.id, pay_to: 'Venmo @test', receipt_path: rPath }).select().single();
+  allowed(req1, 'a brother files a refund request with a receipt, amount, note, committee and how to pay him');
+  ok(req1.data?.status === 'submitted' && req1.data?.profile_id === m1.id, 'a new request starts as Submitted, filed under him');
+  refused(await member.from('refund_requests').insert({ amount: 5, what_for: 'x', pay_to: 'x', receipt_path: rPath2, status: 'processed' }).select(), 'a brother cannot file a request as already Processed');
+  refused(await member.from('refund_requests').insert({ amount: 5, what_for: 'x', pay_to: 'x', receipt_path: rPath2, profile_id: other.id }).select(), 'a brother cannot file a request for someone else');
+  refused(await member.from('refund_requests').insert({ amount: 5, what_for: 'x', pay_to: 'x', receipt_path: `${other.id}/z.jpg` }).select(), "a request cannot point at someone else's receipt");
+  refused(await member.from('refund_requests').insert({ amount: 5, what_for: 'x', pay_to: 'x', receipt_path: rPath2, committee_id: cryso }).select(), 'the committee must be a committee, not a position');
+  refused(await member.from('refund_requests').insert({ amount: 0, what_for: 'x', pay_to: 'x', receipt_path: rPath2 }).select(), 'a zero amount is refused');
+  refused(await member.from('refund_requests').insert({ amount: 5, what_for: ' ', pay_to: 'x', receipt_path: rPath2 }).select(), 'a blank note is refused');
+  { const { data } = await peer.from('refund_requests').select('*'); ok(Array.isArray(data) && !data.some((r) => r.profile_id === m1.id), "another brother cannot see his request"); }
+  { const r = await peer.storage.from('receipts').download(rPath); ok(Boolean(r.error), "another brother cannot open his receipt"); }
+  { const { data } = await adminUser.from('refund_requests').select('*').eq('id', req1.data.id); ok(Array.isArray(data) && data.length === 0, 'an admin who is not Prytanis or Crysophylos cannot see it'); }
+  refused(await member.from('refund_requests').update({ status: 'processed' }).eq('id', req1.data.id).select(), 'a brother cannot change the status himself');
+  ok(/reviewers_only/.test(err(await member.rpc('refund_set_status', { p_id: req1.data.id, p_status: 'processed' }))), 'a brother cannot call the status change');
+  ok(/reviewers_only/.test(err(await adminUser.rpc('refund_set_status', { p_id: req1.data.id, p_status: 'processed' }))), 'an admin cannot change the status either');
+  refused(await anon.rpc('refund_set_status', { p_id: req1.data.id, p_status: 'processed' }), 'a visitor cannot change the status');
+  await admin.from('profile_teams').insert({ profile_id: other.id, team_id: epi });
+  { const { data } = await peer.from('refund_requests').select('*').eq('id', req1.data.id); ok(Array.isArray(data) && data.length === 0, 'the Epiprytanis is not a reviewer'); }
+  await admin.from('profile_teams').delete().eq('profile_id', other.id).eq('team_id', epi);
+  await admin.from('profile_teams').insert({ profile_id: other.id, team_id: cryso });
+  { const { data } = await peer.from('refund_requests').select('*').eq('id', req1.data.id); ok(data?.length === 1 && data[0].pay_to === 'Venmo @test', 'the Crysophylos sees the request, with how to pay him'); }
+  { const r = await peer.storage.from('receipts').download(rPath); ok(!r.error && r.data?.size === 400, 'the Crysophylos opens the receipt'); }
+  { const r = await peer.rpc('refund_set_status', { p_id: req1.data.id, p_status: 'in_review' }); ok(!r.error && r.data?.status === 'in_review' && r.data?.status_by === other.id, 'the Crysophylos marks it In review, recorded as him', r.error?.message); }
+  ok(/bad_status/.test(err(await peer.rpc('refund_set_status', { p_id: req1.data.id, p_status: 'paid' }))), 'an unknown status is refused');
+  { const r = await member.from('refund_requests').delete().eq('id', req1.data.id).select(); ok(!r.error && (r.data || []).length === 0, 'once it is In review, the brother cannot withdraw it'); }
+  { await member.storage.from('receipts').remove([rPath]); const r = await peer.storage.from('receipts').download(rPath); ok(!r.error, 'once it is In review, the brother cannot delete the receipt'); }
+  refused(await peer.from('refund_requests').update({ amount: 1 }).eq('id', req1.data.id).select(), 'not even the Crysophylos can change the amount');
+  allowed(await peer.rpc('refund_set_status', { p_id: req1.data.id, p_status: 'processed' }), 'the Crysophylos marks it Processed');
+  { const { data } = await member.from('refund_requests').select('status').eq('id', req1.data.id).single(); ok(data?.status === 'processed', 'the brother sees it Processed'); }
+  await admin.from('profile_teams').delete().eq('profile_id', other.id).eq('team_id', cryso);
+  { const { data } = await peer.from('refund_requests').select('*').eq('id', req1.data.id); ok(Array.isArray(data) && data.length === 0, 'leaving the Crysophylos position ends his access'); }
+  // A second request, withdrawn while still Submitted.
+  allowed(await member.storage.from('receipts').upload(rPath2, rjpg), 'a brother uploads a second receipt');
+  const req2 = await member.from('refund_requests').insert({ amount: 8, what_for: `${TAG} tape`, pay_to: 'Zelle 555', receipt_path: rPath2 }).select().single();
+  allowed(req2, 'a second request with no committee');
+  { const r = await member.from('refund_requests').delete().eq('id', req2.data.id).select(); ok(!r.error && r.data?.length === 1, 'a brother withdraws a request while it is Submitted'); }
+  allowed(await member.storage.from('receipts').remove([rPath2]), 'and removes its receipt');
+  allowed(await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: true }), 'admin turns the member off');
+  refused(await member.from('refund_requests').insert({ amount: 5, what_for: 'x', pay_to: 'x', receipt_path: rPath2 }).select(), 'a turned-off account cannot file a request');
+  await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: false });
+  ok(/^0$/.test(sql("select count(*) from pg_policies where tablename = 'refund_requests' and 'anon' = any(roles)").trim()), 'no refund rule mentions visitors at all');
+  await admin.from('refund_requests').delete().like('what_for', `${TAG}%`);
+  await admin.storage.from('receipts').remove([rPath, rPath2]);
+
   // ---- Event check-in -------------------------------------------------------------
   // adminUser is an officer (admins are); member (m1) is on a committee only; peer is a plain member.
   const at = (ms) => new Date(Date.now() + ms).toISOString();
@@ -316,7 +376,6 @@ async function main() {
   const HOUSE = { p_lat: 28.0653, p_lng: -80.6236, p_accuracy: 20 };
   const NEAR = { p_lat: 28.06565, p_lng: -80.62375, p_accuracy: 25 }; // about 40 m away
   const FAR = { p_lat: 28.0753, p_lng: -80.6236, p_accuracy: 25 };    // about 1.1 km away
-  const err = (res) => `${res.error?.message || res.data?.error || ''}`;
   allowed(await anon.from('event_history').select('*').limit(1), 'visitor can read event history (the calendar is public)');
   refused(await anon.from('attendance').select('*'), 'visitor cannot read attendance');
   refused(await anon.from('checkin_sessions').select('*'), 'visitor cannot read check-in codes');
