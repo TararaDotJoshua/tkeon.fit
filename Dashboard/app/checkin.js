@@ -260,11 +260,11 @@ export async function openAttendance(eventId) {
   const draw = () => {
     if (s.closed) return;
     const here = new Set(rows.map((r) => r.profile_id));
-    const members = S.profiles.filter((p) => !p.disabled);
+    const members = S.profiles.filter((p) => !p.disabled && !p.is_advisor);
     const away = members.filter((p) => !here.has(p.id));
     s.set(`<div class="form-error" role="alert"></div>
       <p class="ci-event"><b>${esc(ev.title)}</b><br><span class="muted">${esc(when(ev))}</span></p>
-      <p class="ci-count"><b>${rows.length}</b> of ${members.length} brothers checked in</p>
+      <p class="ci-count"><b>${rows.filter((r) => !profile(r.profile_id)?.is_advisor).length}</b> of ${members.length} brothers checked in</p>
       <div class="fsec plain"><h3>Checked in</h3>
         ${rows.length ? `<ul class="rows">${rows.map((r) => { const p = profile(r.profile_id); const by = r.method === 'added' ? ` · added by ${esc(profile(r.added_by)?.name || 'an officer')}` : r.method === 'here' ? ' · at the event' : ' · with the code'; return `<li class="rowi">${avatar(p, 'sm')}<span class="rowi-main"><span class="rowi-title">${esc(p?.name || 'Former member')}</span><span class="rowi-sub">${esc(time(r.checked_in_at))}${by}</span></span><button class="btn quiet small" type="button" data-rm="${r.profile_id}">Remove</button></li>`; }).join('')}</ul>` : '<p class="muted small-text">Nobody yet.</p>'}
       </div>
@@ -286,7 +286,7 @@ export async function openAttendance(eventId) {
     if (e.target.closest('[data-csv]')) {
       const here = new Map(rows.map((r) => [r.profile_id, r]));
       download(fileName(ev.title, ev.starts_at), [['Name', 'Class of', 'Checked in', 'Time', 'How'],
-        ...S.profiles.filter((p) => !p.disabled || here.has(p.id)).map((p) => { const r = here.get(p.id); return [p.name, p.grad_year, r ? 'Yes' : 'No', r ? new Date(r.checked_in_at).toLocaleString('en-US') : '', r ? (r.method === 'added' ? `Added by ${profile(r.added_by)?.name || 'an officer'}` : HOW[r.method] || r.method) : '']; })]);
+        ...S.profiles.filter((p) => (!p.disabled && !p.is_advisor) || here.has(p.id)).map((p) => { const r = here.get(p.id); return [p.name, p.grad_year, r ? 'Yes' : 'No', r ? new Date(r.checked_in_at).toLocaleString('en-US') : '', r ? (r.method === 'added' ? `Added by ${profile(r.added_by)?.name || 'an officer'}` : HOW[r.method] || r.method) : '']; })]);
     }
   });
   try { await load(); draw(); } catch (err) { s.set(`<p class="empty">${esc(why(err))}</p>`); }

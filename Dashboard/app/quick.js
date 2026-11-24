@@ -250,7 +250,7 @@ export function openStudy() {
 /** Admins: every active brother's hours this week and this semester, fewest this week first. */
 function chapterTable() {
   const w = ymd(weekStart());
-  const people = S.profiles.filter((p) => !p.disabled).map((p) => {
+  const people = S.profiles.filter((p) => !p.disabled && !p.is_advisor).map((p) => {
     const rows = Q.rows.filter((r) => r.profile_id === p.id);
     return { p, week: sum(rows.filter((r) => r.day >= w)), semester: sum(rows) };
   }).sort((a, b) => a.week - b.week || (a.p.name || '').localeCompare(b.p.name || ''));

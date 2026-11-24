@@ -82,7 +82,7 @@ async function signPhotos(paths) {
 
 const inTerm = () => R.pnms.filter((p) => p.term === R.term);
 const logOf = (id) => R.log.filter((l) => l.pnm_id === id);
-const brothers = () => S.profiles.filter((p) => !p.disabled && p.name).sort((a, b) => a.name.localeCompare(b.name));
+const brothers = () => S.profiles.filter((p) => !p.disabled && !p.is_advisor && p.name).sort((a, b) => a.name.localeCompare(b.name));
 const recruiters = () => brothers().filter((b) => b.can_recruit || b.is_admin);
 
 // ---------- To-dos ----------
