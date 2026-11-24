@@ -428,13 +428,13 @@ async function main() {
   ok(await pf.locator('.card.has-error').count() >= 9, 'interest form: sending it empty marks every required question');
   await pf.fill('#name', 'Riley Prospect'); await pf.fill('#phone', '(321) 555-0177'); await pf.fill('#email', 'riley.test@my.fit.edu');
   await pf.locator('label.choice', { hasText: 'Email' }).click();
-  await pf.fill('#student_id', '12345');
+  await pf.fill('#student_id', '   ');
   await pf.fill('#major', 'Mechanical Engineering'); await pf.fill('#hobbies', 'Sailing, intramural soccer');
   await pf.setInputFiles('#photo', { name: 'riley.png', mimeType: 'image/png', buffer: png });
   await pf.fill('#allergies', 'None'); await pf.fill('#met_by', 'Alex Admin');
   await pf.locator('#submit').click();
-  ok(/900/.test(await pf.locator('#student_id-err').innerText()), 'interest form: a wrong 900 number is caught before sending');
-  await pf.fill('#student_id', '900765432');
+  ok(/900/.test(await pf.locator('#student_id-err').innerText()), 'interest form: a blank 900 number is caught before sending');
+  await pf.fill('#student_id', '904765432');
   await pf.locator('#submit').click();
   await pf.locator('#done').waitFor();
   ok(/Thanks, Riley!/.test(await pf.locator('#done').innerText()) && /by email/.test(await pf.locator('#done').innerText()), 'interest form: sends, and thanks him by name');
@@ -453,7 +453,7 @@ async function main() {
   await riley.click();
   const ps = sheet(page);
   await ps.locator('.profile-top').waitFor();
-  ok(/900765432/.test(await ps.innerText()) && /Sailing/.test(await ps.innerText()), 'recruitment: his profile shows the form answers');
+  ok(/904765432/.test(await ps.innerText()) && /Sailing/.test(await ps.innerText()), 'recruitment: his profile shows the form answers');
   ok(await ps.locator('a[href^="tel:"]').count() === 1 && await ps.locator('a[href^="sms:"]').count() === 1 && await ps.locator('a[href^="mailto:riley.test@my.fit.edu"]').count() === 1, 'recruitment: call, text and email buttons');
   await ps.locator('label.check', { hasText: 'In person' }).click();
   await ps.locator('[name="contact_note"]').fill('Met at the club fair');

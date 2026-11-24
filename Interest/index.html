@@ -100,7 +100,7 @@
 
     <section class="card" data-q="student_id">
       <label class="q" for="student_id">What is your 900 number?<span class="req" aria-hidden="true">*</span></label>
-      <input class="input" id="student_id" name="student_id" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="11" placeholder="900123456" required>
+      <input class="input" id="student_id" name="student_id" autocomplete="off" maxlength="30" placeholder="900123456" required>
       <span class="err" id="student_id-err"></span>
     </section>
 
@@ -180,7 +180,7 @@ const MESSAGES = {
   bad_phone: ['phone', 'Enter a phone number with area code.'],
   bad_email: ['email', 'Use your @fit.edu or @my.fit.edu email.'],
   bad_contact_pref: ['contact_pref', 'Pick phone or email.'],
-  bad_student_id: ['student_id', 'Your 900 number is 9 digits and starts with 900.'],
+  bad_student_id: ['student_id', 'Enter your 900 number.'],
   bad_major: ['major', 'Enter your major.'],
   bad_hobbies: ['hobbies', 'Tell us a little about your hobbies.'],
   bad_allergies: ['allergies', 'Enter any allergies, or "None".'],
@@ -203,7 +203,7 @@ function values() {
   const pref = form.querySelector('input[name="contact_pref"]:checked');
   return {
     name: v('name'), phone: v('phone'), email: v('email').toLowerCase(), contact_pref: pref ? pref.value : '',
-    student_id: v('student_id').replace(/\D/g, ''), major: v('major'), hobbies: v('hobbies'),
+    student_id: v('student_id'), major: v('major'), hobbies: v('hobbies'),
     social: v('social'), allergies: v('allergies'), met_by: v('met_by'), website: v('website'),
   };
 }
@@ -215,7 +215,7 @@ function check(x) {
   if (x.phone.replace(/\D/g, '').length < 10) errs.phone = 'Enter a phone number with area code.';
   if (!FIT_EMAIL.test(x.email)) errs.email = 'Use your @fit.edu or @my.fit.edu email.';
   if (!x.contact_pref) errs.contact_pref = 'Pick phone or email.';
-  if (!/^900\d{6}$/.test(x.student_id)) errs.student_id = 'Your 900 number is 9 digits and starts with 900.';
+  if (!x.student_id) errs.student_id = 'Enter your 900 number.';
   if (!x.major) errs.major = 'Enter your major.';
   if (!x.hobbies) errs.hobbies = 'Tell us a little about your hobbies.';
   if (!photo) errs.photo = 'Add a picture of yourself.';
