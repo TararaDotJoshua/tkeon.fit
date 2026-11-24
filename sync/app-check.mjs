@@ -28,7 +28,7 @@ const inDays = (n) => { const d = new Date(Date.now() + n * 864e5); return `${d.
 
 async function cleanup() {
   const { data } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  for (const u of data?.users || []) if (/\.test@(my\.)?fit\.edu$/i.test(u.email || '')) await admin.auth.admin.deleteUser(u.id);
+  for (const u of data?.users || []) if (/\.test@(my\.)?fit\.edu$|\.test@example\.com$/i.test(u.email || '')) await admin.auth.admin.deleteUser(u.id);
   await admin.from('issues').delete().or('title.like.E2E%,title.like.<img%');
   await admin.from('goals').delete().like('title', 'E2E%');
   await admin.from('custom_fields').delete().like('name', 'E2E%');
@@ -734,6 +734,74 @@ async function main() {
   await sheet(page).locator('[name="chart"]').selectOption('chair');
   await sheet(page).locator('[data-sheet="primary"]').click();
   await sheet(page).locator('.rowi', { hasText: 'Rush Chairman' }).filter({ hasText: 'Chairmen' }).waitFor();
+  await closeSheets(page);
+
+  // ---- Advisor: an admin makes an invite code; the advisor signs up with it ------------
+  await closeSheets(page);
+  await toSettings(page);
+  await page.locator('#scene-settings [data-go="members"]').click();
+  await sheet(page).locator('[data-do="invite-advisor"]').click();
+  const codeEl = sheet(page).locator('.adv-code');
+  await codeEl.waitFor();
+  const advCode = (await codeEl.innerText()).trim();
+  ok(/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(advCode), 'advisor: an admin makes a one-time invite code in Settings › Members');
+  await page.waitForTimeout(450);
+  await shot(page, 'phone-advisor-code');
+  await sheet(page).locator('[data-sheet="close"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Unused invite' }).waitFor();
+  ok(true, 'advisor: the Members screen lists the unused invite');
+  await closeSheets(page);
+
+  const advCtx = await browser.newContext({ ...devices['iPhone 14'] });
+  const pa = await advCtx.newPage();
+  watch(pa, 'advisor');
+  await pa.goto(BASE);
+  await pa.locator('#account [data-act="signin"]').click();
+  await sheet(pa).locator('[data-do="advisor"]').click();
+  await sheet(pa).locator('[data-do="join"]').click();
+  await sheet(pa).locator('[name="name"]').fill('Dr. Pat Advisor');
+  await sheet(pa).locator('[name="email"]').fill('pat.advisor.test@example.com');
+  await sheet(pa).locator('[name="code"]').fill('AAAA-AAAA-AAAA');
+  await sheet(pa).locator('[name="password"]').fill('a-long-advisor-password');
+  await sheet(pa).locator('[data-sheet="primary"]').click();
+  await pa.waitForFunction(() => /doesn't work/.test(document.querySelector('.sheet-back:last-of-type .form-error')?.textContent || ''));
+  ok(true, 'advisor: a wrong invite code is caught with a clear message');
+  await sheet(pa).locator('[name="code"]').fill(advCode.toLowerCase());
+  await shot(pa, 'phone-advisor-join');
+  await sheet(pa).locator('[data-sheet="primary"]').click();
+  await pa.locator('#account .acct-btn').waitFor();
+  ok(await pa.locator('.sheet-back').count() === 0, 'advisor: signs straight in, with no graduation year to give');
+  await toSettings(pa);
+  await pa.locator('#scene-settings [data-set="edit"]').click();
+  ok(await sheet(pa).locator('[name="grad_year"]').count() === 0 && await sheet(pa).locator('[name="name"]').inputValue() === 'Dr. Pat Advisor', "advisor: Edit profile has their name and no graduation year");
+  await sheet(pa).locator('[data-sheet="close"]').click();
+  ok(/Chapter advisor · Admin/.test(await pa.locator('#scene-settings').innerText()) && await pa.locator('#scene-settings [data-go="members"]').count() === 1, 'advisor: signed in as the chapter advisor, with the admin screens');
+  await pa.locator('#scene-settings [data-set="signout"]').click();
+  await pa.locator('#account [data-act="signin"]').click();
+  await sheet(pa).locator('[data-do="advisor"]').click();
+  await sheet(pa).locator('[name="email"]').fill('pat.advisor.test@example.com');
+  await sheet(pa).locator('[name="password"]').fill('not-the-password');
+  await sheet(pa).locator('[data-sheet="primary"]').click();
+  await pa.waitForFunction(() => /don't match/.test(document.querySelector('.sheet-back:last-of-type .form-error')?.textContent || ''));
+  await sheet(pa).locator('[name="password"]').fill('a-long-advisor-password');
+  await sheet(pa).locator('[data-sheet="primary"]').click();
+  await pa.locator('#account .acct-btn').waitFor();
+  ok(true, 'advisor: signs back in with email and password; a wrong password is refused');
+  await advCtx.close();
+
+  await page.reload();
+  await toSettings(page);
+  await page.locator('#scene-settings [data-go="members"]').click();
+  const advRow = sheet(page).locator('[data-member]', { hasText: 'Dr. Pat Advisor' });
+  await advRow.waitFor();
+  ok(/Advisor/.test(await advRow.innerText()) && /Chapter advisor/.test(await advRow.innerText()), 'advisor: shows in Members labeled as the advisor');
+  await advRow.click();
+  ok(await sheet(page).locator('[name="teams"]').count() === 0 && await sheet(page).locator('[name="can_recruit"]').count() === 0 && /Remove account/.test(await sheet(page).innerText()), "advisor: their member screen has no positions or recruitment switch, and a Remove account button");
+  await closeSheets(page);
+  await toSettings(page);
+  await page.locator('#scene-settings [data-go="teams"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Philanthropy Chairman' }).locator('[data-edit]').click();
+  ok(await sheet(page).locator('.held-by label.check', { hasText: 'Blake Member' }).count() === 1 && await sheet(page).locator('.held-by label.check', { hasText: 'Pat Advisor' }).count() === 0, 'advisor: not offered as a holder of a position');
   await closeSheets(page);
 
   // ---- Event check-in -----------------------------------------------------------------

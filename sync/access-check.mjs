@@ -45,6 +45,7 @@ async function cleanup() {
   await admin.from('custom_fields').delete().like('name', `${TAG}%`);
   await admin.from('budget_lines').delete().like('name', `${TAG}%`);
   await admin.from('refund_requests').delete().like('what_for', `${TAG}%`);
+  sql('delete from private.advisor_invites;');
   const { data: pnms } = await admin.from('pnms').select('id, photo_path').or('email.like.%.test@%,name.like.ACCESS-TEST%');
   for (const p of pnms || []) if (p.photo_path) await admin.storage.from('pnm-photos').remove([p.photo_path]);
   if (pnms?.length) await admin.from('pnms').delete().in('id', pnms.map((p) => p.id));
@@ -168,6 +169,48 @@ async function main() {
   { const { data } = await anon.from('profiles').select('id').eq('id', m2.id); ok(data.length === 0, 'the reset account\'s profile is gone'); }
   ok(await state('member2.test@fit.edu', 9003) === 'can_join', 'after a reset, that scroll number can sign up again');
   { const { data } = await anon.from('goals').select('id, created_by').eq('title', `${TAG} after re-enable`); ok(data.length === 1 && data[0].created_by === null, 'the reset member\'s goal survives, without an author'); }
+
+  // ---- Advisor sign-in ----------------------------------------------------------
+  const ADV = 'advisor.test@gmail.com', ADV_PW = 'a-long-advisor-password';
+  refused(await anon.rpc('admin_create_advisor_invite'), 'a visitor cannot make an advisor invite');
+  refused(await member.rpc('admin_create_advisor_invite'), 'a member cannot make an advisor invite');
+  refused(await member.rpc('admin_advisor_invites'), 'a member cannot list advisor invites');
+  const invite = await adminUser.rpc('admin_create_advisor_invite');
+  allowed(invite, 'an admin makes an advisor invite code');
+  const advCode = invite.data || '';
+  ok(/^[ACDEFGHJKMNPQRTUVWXY3469]{4}-[ACDEFGHJKMNPQRTUVWXY3469]{4}-[ACDEFGHJKMNPQRTUVWXY3469]{4}$/.test(advCode), 'the advCode is 12 characters that cannot be misread', advCode);
+  ok(!sql('select code_hash from private.advisor_invites').includes(advCode.replace(/-/g, '')), 'only a hash of the code is kept');
+  { const { data } = await adminUser.rpc('admin_advisor_invites'); ok(data?.length === 1 && !('code_hash' in data[0]), 'admins see unused invites, never the codes'); }
+  const advState = async (e, c) => (await anon.rpc('advisor_invite_state', { p_email: e, p_code: c })).data;
+  ok(await advState(ADV, 'AAAA-AAAA-AAAA') === 'bad_code', 'advisor form: a wrong code is caught');
+  ok(await advState('not-an-email', advCode) === 'bad_email', 'advisor form: a bad email is caught');
+  ok(await advState('member1.test@my.fit.edu', advCode) === 'has_account', 'advisor form: an email that already has an account is told to sign in');
+  ok(await advState(ADV, advCode.toLowerCase().replace(/-/g, ' ')) === 'ok', 'advisor form: the advCode works without dashes and in lower case');
+  { const c = client(); refused(await c.auth.signUp({ email: ADV, password: ADV_PW, options: { data: { advisor_code: 'AAAA-AAAA-AAAA', name: 'Fake' } } }), 'advisor sign-up refused with a wrong code'); }
+  const advUp = await client().auth.signUp({ email: ADV, password: ADV_PW, options: { data: { advisor_code: advCode, name: '  Dr. Pat Advisor ' } } });
+  ok(!advUp.error && Boolean(advUp.data.session), 'the advisor signs up with any email, the advCode and their own password', advUp.error?.message);
+  const advId = advUp.data.user?.id;
+  { const { data } = await admin.from('profiles').select('name, is_admin, is_advisor, grad_year').eq('id', advId).single();
+    ok(data?.is_admin && data?.is_advisor && data?.name === 'Dr. Pat Advisor' && data?.grad_year === null, 'the advisor is an admin, marked as the advisor, with their name', JSON.stringify(data)); }
+  { const { data } = await admin.auth.admin.getUserById(advId); ok(!('advisor_code' in (data.user.user_metadata || {})), 'the invite code is not kept in the account metadata'); }
+  { const c = client(); refused(await c.auth.signUp({ email: 'second.test@gmail.com', password: ADV_PW, options: { data: { advisor_code: advCode } } }), 'an invite code works only once'); }
+  ok(await advState('second.test@gmail.com', advCode) === 'bad_code', 'a used code shows as not working');
+  { const c = client(); const r = await c.auth.signInWithPassword({ email: ADV, password: ADV_PW });
+    ok(!r.error && (await c.rpc('is_admin')).data === true, 'the advisor signs back in with their password, as an admin');
+    refused(await c.from('profiles').update({ is_advisor: false }).eq('id', advId).select(), 'the advisor cannot change the advisor mark themselves'); }
+  { const r = await client().auth.signInWithPassword({ email: ADV, password: 'wrong-password-here' }); ok(Boolean(r.error), 'a wrong advisor password is refused'); }
+  refused(await member.from('profiles').update({ is_advisor: true }).eq('id', m1.id).select(), 'a brother cannot mark himself as the advisor');
+  { // Expired and cancelled codes stop working.
+    const late = (await adminUser.rpc('admin_create_advisor_invite')).data;
+    sql(`update private.advisor_invites set expires_at = now() - interval '1 minute' where used_at is null;`);
+    ok(await advState('late.test@gmail.com', late) === 'bad_code', 'an invite code expires');
+    const gone = (await adminUser.rpc('admin_create_advisor_invite')).data;
+    const { data: list } = await adminUser.rpc('admin_advisor_invites');
+    allowed(await adminUser.rpc('admin_cancel_advisor_invite', { p_id: list[0].id }), 'an admin cancels an invite');
+    ok(await advState('gone.test@gmail.com', gone) === 'bad_code', 'a cancelled invite code stops working'); }
+  { const c = client(); refused(await c.auth.signUp({ email: 'third.test@gmail.com', password: ADV_PW }), 'a non-FIT sign-up with no invite advCode is still refused'); }
+  allowed(await adminUser.rpc('admin_reset_member', { p_id: advId }), "an admin can remove the advisor's account");
+  { const r = await client().auth.signInWithPassword({ email: ADV, password: ADV_PW }); ok(Boolean(r.error), 'a removed advisor can no longer sign in'); }
 
   // ---- Recruitment --------------------------------------------------------------
   // m1 is a plain member, ad is an admin. Members re-created above where needed.

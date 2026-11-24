@@ -36,10 +36,50 @@ function listSheet(title, draw, onClick) {
 
 // ---------- Members ----------
 
+const accessLabel = (p) => (p.is_advisor ? ' · Advisor' : p.is_admin ? ' · Admin' : p.can_recruit ? ' · Recruitment' : '');
+const memberSub = (p) => (p.is_advisor ? `Chapter advisor${p.is_admin ? ' · Admin' : ''}` : `${p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No year yet'}${teamsOfProfile(p.id).length ? ' · ' + teamsOfProfile(p.id).map((t) => esc(t.name)).join(', ') : ''}`);
+
 function openMembers() {
-  listSheet('Members', () => `<div class="fsec plain list-box"><ul class="rows">${S.profiles.map((p) => row(`data-member="${p.id}"`, esc(p.name || 'No name yet') + (p.is_admin ? ' · Admin' : p.can_recruit ? ' · Recruitment' : '') + (p.disabled ? ' · Turned off' : ''), `${p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No year yet'}${teamsOfProfile(p.id).length ? ' · ' + teamsOfProfile(p.id).map((t) => esc(t.name)).join(', ') : ''}`, avatar(p))).join('') || '<li class="muted">Nobody has signed in yet.</li>'}</ul></div>
-    <p class="muted small-text">Members appear here after their first sign-in.</p>`,
-  (e, redraw) => { const id = e.target.closest('[data-member]')?.dataset.member; if (id) openMember(id, redraw); });
+  let invites = [];
+  const fetchInvites = async () => { const { data } = await sb.rpc('admin_advisor_invites'); invites = data || []; };
+  const { redraw } = listSheet('Members', () => {
+    const people = [...S.profiles].sort((a, b) => Number(a.is_advisor) - Number(b.is_advisor));
+    return `<div class="fsec plain list-box"><ul class="rows">${people.map((p) => row(`data-member="${p.id}"`, esc(p.name || 'No name yet') + accessLabel(p) + (p.disabled ? ' · Turned off' : ''), memberSub(p), avatar(p))).join('') || '<li class="muted">Nobody has signed in yet.</li>'}</ul></div>
+    <p class="muted small-text">Members appear here after their first sign-in.</p>
+    <div class="fsec"><h3>Chapter advisor</h3>
+      <p class="muted small-text">An advisor has no scroll number. Make an invite code and give it to them: they sign in with "Chapter advisor? Sign in here", any email, the code, and a password they choose. Advisors are admins.</p>
+      ${invites.length ? `<ul class="rows">${invites.map((i) => `<li class="rowi"><span class="rowi-main"><span class="rowi-title">Unused invite</span><span class="rowi-sub">Made ${esc(fmtDate(i.created_at.slice(0, 10)))}${i.created_by_name ? ` by ${esc(i.created_by_name)}` : ''} · expires ${esc(fmtDate(i.expires_at.slice(0, 10)))}</span></span><button class="btn quiet small" type="button" data-cancel-invite="${i.id}">Cancel</button></li>`).join('')}</ul>` : ''}
+      <button class="btn small" type="button" data-do="invite-advisor" style="margin-bottom:.85rem">Make an advisor invite code</button>
+    </div>`;
+  }, async (e, redraw2) => {
+    const id = e.target.closest('[data-member]')?.dataset.member;
+    if (id) return openMember(id, redraw2);
+    const cancel = e.target.closest('[data-cancel-invite]')?.dataset.cancelInvite;
+    if (cancel) {
+      if (!(await confirmSheet('Cancel this invite?', 'The code stops working. You can make a new one any time.', 'Cancel invite'))) return;
+      await write(sb.rpc('admin_cancel_advisor_invite', { p_id: cancel }));
+      await fetchInvites(); redraw2(); toast('Invite cancelled.');
+      return;
+    }
+    if (e.target.closest('[data-do="invite-advisor"]')) {
+      const code = await write(sb.rpc('admin_create_advisor_invite'));
+      await fetchInvites(); redraw2();
+      showInviteCode(code);
+    }
+  });
+  fetchInvites().then(redraw);
+}
+
+/** The new code, shown once. */
+function showInviteCode(code) {
+  const s = openSheet({ title: 'Advisor invite code', small: true, html: `<p>Give this code to your advisor:</p>
+    <div class="adv-code" aria-label="Invite code ${esc(code.split('').join(' '))}">${esc(code)}</div>
+    <p class="muted small-text">It works once and expires in 7 days. You won't see it again here, so copy it now. They sign in at tkeon.fit/Dashboard with "Chapter advisor? Sign in here", then "First time? Use your invite code".</p>
+    <div class="btn-row"><button class="btn primary" type="button" data-do="copy">Copy code</button></div>` });
+  s.body.addEventListener('click', async (e) => {
+    if (!e.target.closest('[data-do="copy"]')) return;
+    try { await navigator.clipboard.writeText(code); toast('Code copied.'); } catch { toast(code); }
+  });
 }
 
 function openMember(id, after) {
@@ -51,26 +91,26 @@ function openMember(id, after) {
   const s = openSheet({
     title: p.name || 'Member', primary: 'Save',
     html: `<div class="form-error" role="alert"></div>
-      <div class="fsec plain"><div class="profile-top">${avatar(p, 'lg')}<div><h3>${esc(p.name || 'No name yet')}</h3><div class="muted">${p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No graduation year yet'}</div></div></div></div>
-      <div class="fsec"><h3>Positions and committees</h3>
+      <div class="fsec plain"><div class="profile-top">${avatar(p, 'lg')}<div><h3>${esc(p.name || 'No name yet')}</h3><div class="muted">${p.is_advisor ? 'Chapter advisor' : p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No graduation year yet'}</div></div></div></div>
+      ${p.is_advisor ? '' : `<div class="fsec"><h3>Positions and committees</h3>
         <div class="checks" style="margin-bottom:.85rem">${teams.map((t) => `<label class="check"><input type="checkbox" name="teams" data-multi value="${t.id}"${mine.has(t.id) ? ' checked' : ''}><span>${esc(t.name)}</span></label>`).join('') || '<span class="muted small-text">None exist yet.</span>'}</div>
-      </div>
+      </div>`}
       <div class="fsec"><h3>Access</h3>
-        <label class="switch"><span>Recruitment access</span><input type="checkbox" name="can_recruit"${p.can_recruit || p.is_admin ? ' checked' : ''}${p.is_admin ? ' disabled' : ''}></label>
-        ${p.is_admin ? '<p class="muted small-text">Admins always have recruitment access.</p>' : '<p class="muted small-text">Lets him see and edit PNMs in the Recruitment tab.</p>'}
+        ${p.is_advisor ? '' : `<label class="switch"><span>Recruitment access</span><input type="checkbox" name="can_recruit"${p.can_recruit || p.is_admin ? ' checked' : ''}${p.is_admin ? ' disabled' : ''}></label>
+        ${p.is_admin ? '<p class="muted small-text">Admins always have recruitment access.</p>' : '<p class="muted small-text">Lets him see and edit PNMs in the Recruitment tab.</p>'}`}
         <label class="switch"><span>Admin</span><input type="checkbox" name="is_admin"${p.is_admin ? ' checked' : ''}${me ? ' disabled' : ''}></label>
         <label class="switch"><span>Account turned off</span><input type="checkbox" name="disabled"${p.disabled ? ' checked' : ''}${me ? ' disabled' : ''}></label>
         ${me ? '<p class="muted small-text">You can\'t change your own access.</p>' : ''}
       </div>
-      ${me ? '' : '<div class="btn-row"><button class="btn danger" type="button" data-do="reset">Reset account</button></div><p class="muted small-text">Resetting removes the account and frees the scroll number, so the brother can sign up again. His goals and issues stay.</p>'}`,
+      ${me ? '' : p.is_advisor ? '<div class="btn-row"><button class="btn danger" type="button" data-do="reset">Remove account</button></div><p class="muted small-text">Removes the advisor\'s account. To let them back in (for example, a forgotten password), make a new invite code.</p>' : '<div class="btn-row"><button class="btn danger" type="button" data-do="reset">Reset account</button></div><p class="muted small-text">Resetting removes the account and frees the scroll number, so the brother can sign up again. His goals and issues stay.</p>'}`,
     onPrimary: async () => {
       const f = formData(s.body);
-      const want = new Set(f.teams || []);
+      const want = p.is_advisor ? mine : new Set(f.teams || []);
       const add = [...want].filter((t) => !mine.has(t)), drop = [...mine].filter((t) => !want.has(t));
       if (add.length) await write(sb.from('profile_teams').insert(add.map((team_id) => ({ profile_id: id, team_id }))));
       if (drop.length) await write(sb.from('profile_teams').delete().eq('profile_id', id).in('team_id', drop));
       if (!me && (f.is_admin !== p.is_admin || f.disabled !== p.disabled)) await write(sb.rpc('admin_set_member', { p_id: id, p_is_admin: f.is_admin, p_disabled: f.disabled }));
-      if (!p.is_admin && f.can_recruit !== Boolean(p.can_recruit)) await write(sb.rpc('admin_set_recruiter', { p_id: id, p_on: f.can_recruit }));
+      if (!p.is_admin && !p.is_advisor && f.can_recruit !== Boolean(p.can_recruit)) await write(sb.rpc('admin_set_recruiter', { p_id: id, p_on: f.can_recruit }));
       await load();
       s.close();
       toast('Saved.');
@@ -79,11 +119,12 @@ function openMember(id, after) {
   });
   s.body.addEventListener('click', async (e) => {
     if (e.target.closest('[data-do="reset"]')) {
-      if (!(await confirmSheet('Reset this account?', `${p.name || 'This member'} will have to sign up again with his FIT email and scroll number.`, 'Reset'))) return;
+      if (!(await (p.is_advisor ? confirmSheet('Remove this account?', `${p.name || 'The advisor'} won't be able to sign in until you give them a new invite code.`, 'Remove')
+        : confirmSheet('Reset this account?', `${p.name || 'This member'} will have to sign up again with his FIT email and scroll number.`, 'Reset')))) return;
       await write(sb.rpc('admin_reset_member', { p_id: id }));
       await load();
       s.close();
-      toast('Account reset.');
+      toast(p.is_advisor ? 'Account removed.' : 'Account reset.');
       after?.();
     }
   });
@@ -132,7 +173,7 @@ function openTeams() {
     const isPos = t.kind === 'position';
     const chartField = isPos ? field('Where it sits on the org chart', `<select class="input" name="chart">${CHART.map(([v, l]) => opt(v, l, t.chart || 'chair')).join('')}</select>`) : '';
     const had = new Set(edit ? holdersOf(edit).map((p) => p.id) : []);
-    const people = S.profiles.filter((p) => !p.disabled || had.has(p.id)).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const people = S.profiles.filter((p) => ((!p.disabled && !p.is_advisor) || had.has(p.id))).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     const heldBy = `<div class="field" role="group" aria-labelledby="held-by-lab"><span class="lab" id="held-by-lab">${isPos ? 'Held by' : 'Members'}</span>
       <div class="checks held-by">${people.map((p) => `<label class="check"><input type="checkbox" name="holders" data-multi value="${p.id}"${had.has(p.id) ? ' checked' : ''}><span>${esc(p.name || 'No name yet')}</span></label>`).join('') || '<span class="muted small-text">Nobody has signed in yet.</span>'}</div>
       <span class="hint">${isPos ? 'Pick more than one for co-chairs. Holding a position lets a brother run event check-in.' : 'Brothers on this committee.'}</span></div>`;

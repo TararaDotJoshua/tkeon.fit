@@ -59,6 +59,9 @@ create table if not exists public.profiles (
   disabled    boolean not null default false,
   created_at  timestamptz not null default now()
 );
+-- The chapter advisor (see advisors.sql): signs in with an invite code instead of
+-- a scroll number, and isn't counted or picked as a brother.
+alter table public.profiles add column if not exists is_advisor boolean not null default false;
 
 create table if not exists public.teams (
   id          uuid primary key default gen_random_uuid(),
@@ -183,14 +186,31 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- ---------------------------------------------------------------------------
--- Sign-up: only a FIT email with a real, unclaimed scroll number gets in
+-- Sign-up: only a FIT email with a real, unclaimed scroll number gets in, or
+-- an advisor with an unused invite code from an admin (advisors.sql).
 -- ---------------------------------------------------------------------------
 create or replace function private.before_auth_user_write() returns trigger
 language plpgsql security definer set search_path = '' as $$
 declare
   n integer;
   s private.scroll%rowtype;
+  inv uuid;
 begin
+  if tg_op = 'INSERT' and new.raw_user_meta_data ? 'advisor_code' then
+    if new.email is null or new.email !~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$' then
+      raise exception 'signup_bad_email';
+    end if;
+    select i.id into inv from private.advisor_invites i
+    where i.code_hash = private.advisor_code_hash(new.raw_user_meta_data ->> 'advisor_code')
+      and i.used_at is null and i.expires_at > now()
+    for update;
+    if inv is null then
+      raise exception 'signup_bad_invite';
+    end if;
+    perform set_config('tkeon.signup_advisor', inv::text, true);
+    new.raw_user_meta_data := new.raw_user_meta_data - 'advisor_code' - 'scroll';
+    return new;
+  end if;
   if tg_op = 'INSERT' then
     if not private.fit_email(new.email) then
       raise exception 'signup_bad_domain';
@@ -218,9 +238,10 @@ begin
     -- Hand the number to the after-insert trigger, for this transaction only.
     perform set_config('tkeon.signup_scroll', n::text, true);
   end if;
-  -- The scroll number is the password: never keep it in the account's metadata.
-  if new.raw_user_meta_data ? 'scroll' then
-    new.raw_user_meta_data := new.raw_user_meta_data - 'scroll';
+  -- The scroll number is the password, and an invite code is one-time: never
+  -- keep either in the account's metadata.
+  if new.raw_user_meta_data ?| array['scroll', 'advisor_code'] then
+    new.raw_user_meta_data := new.raw_user_meta_data - 'scroll' - 'advisor_code';
   end if;
   return new;
 end;
@@ -230,9 +251,22 @@ create or replace function private.after_auth_user_created() returns trigger
 language plpgsql security definer set search_path = '' as $$
 declare
   n      integer := nullif(current_setting('tkeon.signup_scroll', true), '')::integer;
+  adv    uuid := nullif(current_setting('tkeon.signup_advisor', true), '')::uuid;
   nm     text;
   admins text;
 begin
+  -- An advisor: use up the invite; advisors are admins.
+  if adv is not null then
+    update private.advisor_invites set used_by = new.id, used_at = now()
+    where id = adv and used_at is null;
+    if not found then
+      raise exception 'signup_bad_invite';
+    end if;
+    perform set_config('tkeon.signup_advisor', '', true);
+    insert into public.profiles (id, name, is_admin, is_advisor)
+    values (new.id, left(btrim(coalesce(new.raw_user_meta_data ->> 'name', '')), 80), true, true);
+    return new;
+  end if;
   if n is null then
     raise exception 'signup_unknown_scroll';
   end if;

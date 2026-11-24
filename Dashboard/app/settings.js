@@ -24,8 +24,8 @@ export function renderSettings() {
   el.innerHTML = `<div class="app-head"><h2>Settings</h2></div>
     <section class="panel set-card" aria-label="Your profile">
       <div class="profile-top">${avatar(p, 'lg')}<div><h3>${esc(p.name || 'No name yet')}</h3>
-        <div class="muted">${p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No graduation year yet'}${p.is_admin ? ' · Admin' : p.can_recruit ? ' · Recruitment' : ''}</div></div></div>
-      ${teams.length ? teamChips(teams) : '<p class="muted small-text">No positions yet. An admin sets these.</p>'}
+        <div class="muted">${p.is_advisor ? `Chapter advisor${p.is_admin ? ' · Admin' : ''}` : `${p.grad_year ? `Class of ${esc(p.grad_year)}` : 'No graduation year yet'}${p.is_admin ? ' · Admin' : p.can_recruit ? ' · Recruitment' : ''}`}</div></div></div>
+      ${teams.length ? teamChips(teams) : p.is_advisor ? '' : '<p class="muted small-text">No positions yet. An admin sets these.</p>'}
       <p class="muted small-text set-email">Signed in as ${esc(S.user.email)}</p>
       <div class="btn-row"><button class="btn" type="button" data-set="edit">Edit profile</button></div>
     </section>
