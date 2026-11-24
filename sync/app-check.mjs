@@ -466,8 +466,43 @@ async function main() {
   await ps.locator('[data-live="main_contact"]').selectOption({ label: 'Blake Member' });
   await page.waitForFunction(() => /set the main contact to Blake Member/.test(document.querySelector('.sheet-back:last-of-type .act')?.innerText || ''));
   ok(true, 'recruitment: handing him to another brother is logged');
+
+  // To-dos: one overdue for Alex, one for nobody.
+  const yesterday = new Date(Date.now() - 864e5);
+  const ymdLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  await ps.locator('[name="todo_title"]').fill('Invite to the cookout');
+  await ps.locator('[name="todo_due"]').fill(ymdLocal(yesterday));
+  await ps.locator('[name="todo_assignee"]').selectOption({ label: 'Alex Admin (you)' });
+  await ps.locator('[data-do="add-todo"]').click();
+  await ps.locator('.todo', { hasText: 'Invite to the cookout' }).waitFor();
+  await ps.locator('[name="todo_title"]').fill('Ask about his class schedule');
+  await ps.locator('[name="todo_title"]').press('Enter');
+  await ps.locator('.todo', { hasText: 'Ask about his class schedule' }).waitFor();
+  const first = ps.locator('.todo', { hasText: 'Invite to the cookout' });
+  ok(/Overdue/.test(await first.innerText()) && /You/.test(await first.innerText()), 'PNM to-dos: an overdue step says so, and who has it');
+  ok(/0 of 2 done/i.test(await ps.locator('#pnm-todos h3').innerText()), 'PNM to-dos: the profile counts them');
+  ok(await ps.locator('[name="todo_title"]').inputValue() === '', 'PNM to-dos: the box clears for the next one');
+  await ps.locator('#pnm-todos').scrollIntoViewIfNeeded();
   await shot(page, 'phone-recruit-profile');
+  await ps.locator('[data-todo-edit]', { hasText: 'Ask about his class schedule' }).click();
+  await sheet(page).locator('[name="todo_title"]').fill('Ask about his class schedule this week');
+  await sheet(page).locator('[data-sheet="primary"]').click();
+  await ps.locator('.todo', { hasText: 'this week' }).waitFor();
+  ok(await page.locator('.sheet-back').count() === 1, 'PNM to-dos: editing one saves and returns to his profile');
   await ps.locator('[data-sheet="close"]').click();
+  ok(/0 of 2 to-dos done · Next: Invite to the cookout/.test(await riley.innerText()) && /To-do due/.test(await riley.innerText()), 'PNM to-dos: his card shows progress, the next step, and that one is due');
+
+  // Ticking it off on his profile.
+  await riley.click();
+  await ps.locator('.todo', { hasText: 'Invite to the cookout' }).locator('input[type="checkbox"]').check();
+  await page.waitForFunction(() => /finished a to-do: “Invite to the cookout”/.test(document.querySelector('.sheet-back:last-of-type .act')?.innerText || ''));
+  ok(await ps.locator('.todo-done .todo', { hasText: 'Invite to the cookout' }).count() === 1, 'PNM to-dos: a ticked step moves to Done');
+  ok(/1 of 2 done/i.test(await ps.locator('#pnm-todos h3').innerText()), 'PNM to-dos: the finished step is in his history, and counted');
+  await ps.locator('[data-sheet="close"]').click();
+  await page.locator('#gtab-quick').click();
+  await page.locator('[data-quick="refund"]').waitFor();
+  ok(await page.locator('[data-quick="todos"]').count() === 0, 'PNM to-dos: they live only on PNM profiles, not in Quick access');
+  await page.locator('#gtab-recruit').click();
 
   await page.locator('[data-view="pipeline"]').click();
   ok(await page.locator('.rec-cols .col[data-stage="met"] .pmini', { hasText: 'Riley Prospect' }).count() === 1, 'recruitment: the pipeline shows him under Met');

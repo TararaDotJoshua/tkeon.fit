@@ -20,7 +20,7 @@ const QUIET_DAYS = 7;
 
 export const canRecruit = () => isMember() && Boolean(S.profile.can_recruit || S.profile.is_admin);
 
-const R = { pnms: [], log: [], loaded: false, loading: null, error: null, term: null, view: 'people', filter: 'all', q: '', stage: '', photos: new Map() };
+const R = { pnms: [], log: [], todos: [], loaded: false, loading: null, error: null, term: null, view: 'people', filter: 'all', q: '', stage: '', photos: new Map() };
 let pipelineSortables = [];
 
 // ---------- Semesters ----------
@@ -44,19 +44,21 @@ function termChoices(current) {
 
 // ---------- Data ----------
 
-export function resetRecruit() { Object.assign(R, { pnms: [], log: [], loaded: false, loading: null, error: null }); R.photos.clear(); }
+export function resetRecruit() { Object.assign(R, { pnms: [], log: [], todos: [], loaded: false, loading: null, error: null }); R.photos.clear(); }
 
 export function loadRecruit() {
   if (!canRecruit()) { resetRecruit(); return Promise.resolve(); }
   R.loading ||= (async () => {
     try {
-      const [p, l] = await Promise.all([
+      const [p, l, t] = await Promise.all([
         sb.from('pnms').select('*').order('name'),
         sb.from('pnm_log').select('*').order('at'),
+        sb.from('pnm_todos').select('*').order('created_at'),
       ]);
       if (p.error) throw p.error;
       if (l.error) throw l.error;
-      R.pnms = p.data; R.log = l.data; R.loaded = true; R.error = null;
+      if (t.error) throw t.error;
+      R.pnms = p.data; R.log = l.data; R.todos = t.data; R.loaded = true; R.error = null;
       if (!R.term || !terms().includes(R.term)) R.term = termFor(new Date());
       await signPhotos(R.pnms.map((x) => x.photo_path).filter(Boolean));
     } catch (e) {
@@ -81,6 +83,74 @@ async function signPhotos(paths) {
 const inTerm = () => R.pnms.filter((p) => p.term === R.term);
 const logOf = (id) => R.log.filter((l) => l.pnm_id === id);
 const brothers = () => S.profiles.filter((p) => !p.disabled && p.name).sort((a, b) => a.name.localeCompare(b.name));
+const recruiters = () => brothers().filter((b) => b.can_recruit || b.is_admin);
+
+// ---------- To-dos ----------
+
+/** Open steps first, soonest due first (no date last); then done ones, latest first. */
+const byDue = (a, b) => (a.due || '9999').localeCompare(b.due || '9999') || a.created_at.localeCompare(b.created_at);
+const todosOf = (id) => R.todos.filter((t) => t.pnm_id === id);
+const openTodos = (id) => todosOf(id).filter((t) => !t.done).sort(byDue);
+const doneTodos = (id) => todosOf(id).filter((t) => t.done).sort((a, b) => (b.done_at || '').localeCompare(a.done_at || ''));
+const overdue = (t) => !t.done && t.due && daysUntil(t.due) < 0;
+const dueSoon = (t) => !t.done && t.due && daysUntil(t.due) <= 0;
+function dueText(t) {
+  if (!t.due) return '';
+  const n = daysUntil(t.due);
+  return n === 0 ? 'Due today' : n === 1 ? 'Due tomorrow' : n < 0 ? `Was due ${fmtDate(t.due)}` : `Due ${fmtDate(t.due)}`;
+}
+
+function todoRow(t) {
+  const who = profile(t.assignee)?.name;
+  const meta = t.done
+    ? [`Done ${fmtDate(t.done_at.slice(0, 10))}`, profile(t.done_by)?.name && `by ${profile(t.done_by).name}`].filter(Boolean).join(' ')
+    : [dueText(t), who && (t.assignee === S.user?.id ? 'You' : who)].filter(Boolean).join(' · ');
+  return `<li class="todo${t.done ? ' is-done' : ''}">
+    <label class="tcheck"><input type="checkbox" data-todo-done="${t.id}"${t.done ? ' checked' : ''} aria-label="${esc(t.done ? `Mark “${t.title}” not done` : `Mark “${t.title}” done`)}"><span class="tbox" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></label>
+    <button class="ttext" type="button" data-todo-edit="${t.id}">
+      <span class="ttitle">${esc(t.title)}</span>
+      ${meta || overdue(t) ? `<span class="tmeta">${overdue(t) ? '<span class="flag">Overdue</span> ' : ''}${esc(meta)}</span>` : ''}
+    </button>
+  </li>`;
+}
+
+async function setDone(id, done) {
+  const t = R.todos.find((x) => x.id === id);
+  if (t) t.done = done;
+  await write(sb.from('pnm_todos').update({ done }).eq('id', id));
+  toast(done ? 'Done.' : 'Marked not done.');
+}
+
+function assigneeSelect(current) {
+  const list = recruiters();
+  const extra = current && !list.some((b) => b.id === current) ? profile(current) : null; // kept if he lost access
+  return `<select class="input" name="todo_assignee">${opt('', 'Nobody', current || '')}${extra ? opt(extra.id, extra.name, current) : ''}${list.map((b) => opt(b.id, b.id === S.user?.id ? `${b.name} (you)` : b.name, current || '')).join('')}</select>`;
+}
+
+/** Edit one step: what, when, who, or delete it. */
+function openTodoForm(id, after) {
+  const t = R.todos.find((x) => x.id === id);
+  if (!t) return toast("That to-do isn't here any more.");
+  const s = openSheet({
+    title: 'To-do', primary: 'Save', small: true,
+    html: `<div class="form-error" role="alert"></div><div class="fsec">
+      ${field('What', `<input class="input" name="todo_title" maxlength="200" value="${esc(t.title)}" required>`)}
+      <div class="row2">${field('Due', `<input class="input" name="todo_due" type="date" value="${esc(t.due || '')}">`)}${field('Assigned to', assigneeSelect(t.assignee))}</div>
+      </div><div class="btn-row"><button class="btn danger small" type="button" data-do="del-todo">Delete this to-do</button></div>`,
+    onPrimary: async () => {
+      const v = formData(s.body);
+      if (!v.todo_title?.trim()) return s.error('Say what needs doing.');
+      await write(sb.from('pnm_todos').update({ title: v.todo_title.trim(), due: v.todo_due || null, assignee: v.todo_assignee || null }).eq('id', id));
+      s.close(); toast('Saved.'); await loadRecruit(); after?.();
+    },
+  });
+  s.body.addEventListener('click', async (e) => {
+    if (!e.target.closest('[data-do="del-todo"]')) return;
+    if (!(await confirmSheet('Delete this to-do?', `“${t.title}” is removed from his list.`, 'Delete'))) return;
+    await write(sb.from('pnm_todos').delete().eq('id', id));
+    s.close(); toast('Deleted.'); await loadRecruit(); after?.();
+  });
+}
 
 function facts(p) {
   const since = p.last_contact_at || p.created_at;
@@ -89,9 +159,9 @@ function facts(p) {
   return {
     active,
     quiet: active && quiet >= QUIET_DAYS ? quiet : 0,
-    due: active && p.next_date && daysUntil(p.next_date) <= 0,
+    due: active && openTodos(p.id).some(dueSoon),
     unassigned: active && !p.main_contact,
-    mine: p.main_contact === S.user?.id,
+    mine: p.main_contact === S.user?.id || openTodos(p.id).some((t) => t.assignee === S.user?.id),
     dup: Boolean(p.email) && R.pnms.some((q) => q.id !== p.id && q.term === p.term && q.email === p.email),
   };
 }
@@ -105,7 +175,7 @@ const agoText = (iso) => { const d = Math.floor((Date.now() - Date.parse(iso)) /
 
 // ---------- The tab ----------
 
-const FILTERS = [['all', 'All'], ['mine', 'Mine'], ['due', 'Follow-ups due'], ['quiet', `Quiet ${QUIET_DAYS}+ days`], ['unassigned', 'Unassigned']];
+const FILTERS = [['all', 'All'], ['mine', 'Mine'], ['due', 'To-dos due'], ['quiet', `Quiet ${QUIET_DAYS}+ days`], ['unassigned', 'Unassigned']];
 
 export function renderRecruit() {
   const el = $('#scene-recruit');
@@ -159,16 +229,23 @@ function peopleHtml() {
 
 function cardHtml(p, f) {
   const mc = profile(p.main_contact);
-  const flags = [f.due && 'Follow-up due', f.quiet && `Quiet ${f.quiet} days`, f.unassigned && 'Unassigned', f.dup && 'Possible duplicate'].filter(Boolean);
+  const flags = [f.due && 'To-do due', f.quiet && `Quiet ${f.quiet} days`, f.unassigned && 'Unassigned', f.dup && 'Possible duplicate'].filter(Boolean);
   return `<article class="panel pcard" data-pnm="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(stageLabel(p.stage))}">
     ${photoHtml(p)}
     <span class="pmain">
       <span class="pname">${esc(p.name)}</span>
       <span class="psub">${esc(stageLabel(p.stage))}${p.major ? ` · ${esc(p.major)}` : ''}</span>
       <span class="pmeta">${mc ? `With ${esc(mc.name)}` : 'No main contact'} · ${p.last_contact_at ? `contacted ${esc(agoText(p.last_contact_at))}` : 'not contacted yet'}</span>
+      ${todoLine(p)}
       ${flags.length ? `<span class="flags">${flags.map((x) => `<span class="flag">${esc(x)}</span>`).join('')}</span>` : ''}
     </span>
   </article>`;
+}
+
+function todoLine(p) {
+  const open = openTodos(p.id), all = todosOf(p.id).length;
+  if (!all) return '';
+  return `<span class="pmeta pnext">${all - open.length} of ${all} to-dos done${open[0] ? ` · Next: ${esc(open[0].title)}${open[0].due ? ` (${esc(dueText(open[0]).toLowerCase())})` : ''}` : ''}</span>`;
 }
 
 function pipelineHtml() {
@@ -227,7 +304,7 @@ function numbersHtml() {
     <section class="panel num-card"><h3 class="eyebrow">${esc(R.term)}</h3>
       <div class="num-big">${list.length}<span> PNMs</span></div>
       <p class="muted small-text">${accepted} accepted${list.length ? ` · ${Math.round((accepted / list.length) * 100)}% of everyone` : ''}${ini ? ` · Initiates KRA: ${esc(String(ini.current ?? '–'))} of ${esc(String(ini.goal ?? '–'))}` : ''}</p>
-      <p class="muted small-text">${flagged('unassigned')} unassigned · ${flagged('quiet')} quiet ${QUIET_DAYS}+ days · ${flagged('due')} follow-ups due</p>
+      <p class="muted small-text">${flagged('unassigned')} unassigned · ${flagged('quiet')} quiet ${QUIET_DAYS}+ days · ${flagged('due')} with to-dos due</p>
     </section>
     <section class="panel num-card"><h3 class="eyebrow">By stage</h3>
       <ul class="nrows">${STAGES.map(([v, l]) => { const n = list.filter((p) => p.stage === v).length; return `<li><span>${esc(l)}</span>${bar(n, max)}<b>${n}</b></li>`; }).join('')}</ul>
@@ -294,6 +371,8 @@ export function openPnm(id) {
     const talkers = new Map();
     for (const l of log) if (l.kind === 'contact' && l.actor) talkers.set(l.actor, (talkers.get(l.actor) || 0) + 1);
     const social = socialLink(p.social);
+    const todos = todosOf(id), open = openTodos(id), done = doneTodos(id);
+    const wasOpen = s.body.querySelector('.todo-done')?.open;
     s.title(p.name);
     s.set(`<div class="fsec plain">
         <div class="profile-top">${photoHtml(p, 'lg')}<div><h3>${esc(p.name)}</h3>
@@ -315,9 +394,14 @@ export function openPnm(id) {
         <div class="checks" role="radiogroup" aria-label="How">${HOW.map(([v, l]) => `<label class="check"><input type="radio" name="how" value="${v}"${v === how ? ' checked' : ''}><span>${l}</span></label>`).join('')}</div>
         <div class="row-log">${field('Note (optional)', '<input class="input" name="contact_note" maxlength="1000" placeholder="Asked about the cookout">')}<button class="btn primary small" type="button" data-do="log">Log it</button></div>
       </div>
-      <div class="fsec"><h3>Next step</h3>
-        <div class="row2">${field('What', `<input class="input" name="next_step" maxlength="300" value="${esc(p.next_step || '')}" placeholder="Invite to the cookout">`)}${field('By', `<input class="input" name="next_date" type="date" value="${esc(p.next_date || '')}">`)}</div>
-        <button class="btn small" type="button" data-do="next" style="margin-bottom:.85rem">Save next step</button>
+      <div class="fsec" id="pnm-todos"><h3>To-dos${todos.length ? ` <span class="muted">· ${done.length} of ${todos.length} done</span>` : ''}</h3>
+        ${open.length ? `<ul class="todos">${open.map((t) => todoRow(t)).join('')}</ul>` : `<p class="muted small-text">${todos.length ? 'All done.' : 'No to-dos yet.'}</p>`}
+        <div class="todo-add">
+          ${field('Add a step', '<input class="input" name="todo_title" maxlength="200" placeholder="Invite to the cookout" enterkeyhint="done">')}
+          <div class="row2">${field('Due (optional)', '<input class="input" name="todo_due" type="date">')}${field('Assigned to', assigneeSelect(p.main_contact && recruiters().some((b) => b.id === p.main_contact) ? p.main_contact : ''))}</div>
+          <button class="btn small" type="button" data-do="add-todo" style="margin-bottom:.85rem">Add to-do</button>
+        </div>
+        ${done.length ? `<details class="todo-done"><summary>Done (${done.length})</summary><ul class="todos">${done.map((t) => todoRow(t)).join('')}</ul></details>` : ''}
       </div>
       <div class="fsec"><h3>Add a note</h3>
         ${field('Note', '<textarea class="input" name="note" maxlength="1000"></textarea>', 'Keep it factual. Write it as if he will read it.')}
@@ -330,19 +414,32 @@ export function openPnm(id) {
       <div class="fsec plain"><h3 class="eyebrow">History</h3><ul class="act">${[...log].reverse().map(historyLine).join('')}</ul></div>
       <div class="btn-row"><button class="btn" type="button" data-do="edit">Edit details</button><button class="btn danger" type="button" data-do="delete">Delete</button></div>
       <p class="muted small-text">PNM records are deleted automatically one year after they were entered.</p>`);
+    if (wasOpen) s.body.querySelector('.todo-done')?.setAttribute('open', '');
   };
   draw();
 
   const refresh = async () => { await loadRecruit(); if (!s.closed) draw(); };
   s.body.addEventListener('change', async (e) => {
     if (e.target.name === 'how') { how = e.target.value; return; }
+    if (e.target.dataset.todoDone) { await setDone(e.target.dataset.todoDone, e.target.checked); return refresh(); }
     const live = e.target.dataset.live;
     if (!live) return;
     await write(sb.from('pnms').update({ [live]: e.target.value || null }).eq('id', id));
     toast(live === 'stage' ? `Moved to ${stageLabel(e.target.value)}.` : 'Main contact saved.');
     refresh();
   });
+  const addTodo = async () => {
+    const v = formData(s.body);
+    if (!v.todo_title?.trim()) { toast('Say what needs doing.'); $('[name="todo_title"]', s.body)?.focus(); return; }
+    await write(sb.from('pnm_todos').insert({ pnm_id: id, title: v.todo_title.trim(), due: v.todo_due || null, assignee: v.todo_assignee || null }));
+    toast('To-do added.');
+    await refresh();
+    $('[name="todo_title"]', s.body)?.focus();
+  };
+  s.body.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.name === 'todo_title') { e.preventDefault(); addTodo(); } });
   s.body.addEventListener('click', async (e) => {
+    const edit = e.target.closest('[data-todo-edit]')?.dataset.todoEdit;
+    if (edit) return openTodoForm(edit, () => { if (!s.closed) draw(); });
     const act = e.target.closest('[data-do]')?.dataset.do;
     if (!act) return;
     const v = formData(s.body);
@@ -351,11 +448,7 @@ export function openPnm(id) {
       toast('Contact logged.');
       return refresh();
     }
-    if (act === 'next') {
-      await write(sb.from('pnms').update({ next_step: v.next_step || null, next_date: v.next_date || null }).eq('id', id));
-      toast('Next step saved.');
-      return refresh();
-    }
+    if (act === 'add-todo') return addTodo();
     if (act === 'note') {
       if (!v.note) return toast('Write the note first.');
       await write(sb.from('pnm_log').insert({ pnm_id: id, kind: 'note', note: v.note }));
@@ -381,6 +474,7 @@ function historyLine(l) {
   if (l.kind === 'contact') return `<li><b>${who}</b> ${esc(l.how ? `logged a ${howLabel(l.how)}` : 'logged a contact')}${l.note ? `: “${esc(l.note)}”` : ''} · ${when}</li>`;
   if (l.kind === 'note') return `<li><b>${who}</b> noted: “${esc(l.note)}” · ${when}</li>`;
   if (l.kind === 'stage') return `<li><b>${who}</b> moved him: ${esc(l.note)} · ${when}</li>`;
+  if (l.kind === 'todo') return `<li><b>${who}</b> finished a to-do: “${esc(l.note)}” · ${when}</li>`;
   if (l.kind === 'assigned') return `<li><b>${who}</b> set the main contact to ${esc(l.note)} · ${when}</li>`;
   return `<li>${l.actor ? `<b>${who}</b> added him` : esc(l.note || 'Added')} · ${when}</li>`;
 }

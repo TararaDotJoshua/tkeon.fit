@@ -352,3 +352,22 @@ button.rowi { width: 100%; border: 0; border-bottom: 1px solid var(--line); back
 .rf-seg .seg-b[aria-checked="true"] { background: var(--panel); color: var(--text); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
 .rf-seg .seg-b:focus-visible { outline: 2px solid var(--cherry); outline-offset: -2px; }
 .danger-text { color: var(--cherry); }
+
+/* PNM to-dos */
+.todos { list-style: none; margin: 0 0 0.6rem; padding: 0; }
+.todo { display: flex; align-items: flex-start; gap: 0.35rem; border-bottom: 1px solid var(--line); }
+.todo:last-child { border-bottom: 0; }
+.tcheck { position: relative; display: flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; flex: none; cursor: pointer; }
+.tcheck input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.tbox { display: flex; align-items: center; justify-content: center; width: 1.35rem; height: 1.35rem; border: 2px solid var(--muted); border-radius: 0.4rem; background: var(--panel); }
+.tbox svg { width: 0.95rem; height: 0.95rem; fill: none; stroke: var(--panel); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.tcheck input:checked + .tbox { background: var(--text); border-color: var(--text); }
+.tcheck input:checked + .tbox svg { opacity: 1; }
+.tcheck input:focus-visible + .tbox { outline: 2px solid var(--cherry); outline-offset: 2px; }
+.ttext { flex: 1; min-width: 0; min-height: 44px; padding: 0.55rem 0.25rem 0.55rem 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ttitle { display: block; font-weight: 700; overflow-wrap: anywhere; }
+.tmeta { display: block; margin-top: 0.15rem; color: var(--muted); font-size: 0.8rem; }
+.todo.is-done .ttitle { color: var(--muted); text-decoration: line-through; font-weight: 600; }
+.todo-add { margin-top: 0.4rem; }
+.todo-done summary { margin-bottom: 0.4rem; color: var(--muted); font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.pnext { margin-top: 0.1rem; }
