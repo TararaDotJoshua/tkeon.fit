@@ -659,6 +659,33 @@ async function main() {
   await sheet(page).locator('[name="chart"]').selectOption('exec');
   await sheet(page).locator('[data-sheet="primary"]').click();
   await sheet(page).locator('.rowi', { hasText: 'Rush Chairman' }).filter({ hasText: 'Executive board' }).waitFor();
+  // Co-chairs: pick two brothers on one chairman position, from the position itself.
+  await sheet(page).locator('.rowi', { hasText: 'Philanthropy Chairman' }).locator('[data-edit]').click();
+  await sheet(page).locator('.held-by label.check', { hasText: 'Blake Member' }).click();
+  await sheet(page).locator('.held-by label.check', { hasText: 'Alex Admin' }).click();
+  await shot(page, 'phone-position-held-by');
+  await sheet(page).locator('[data-sheet="primary"]').click();
+  const philRow = sheet(page).locator('.rowi', { hasText: 'Philanthropy Chairman' });
+  await philRow.filter({ hasText: 'Alex Admin' }).waitFor();
+  ok(/Alex Admin, Blake Member/.test(await philRow.innerText()), 'positions: an admin gives one chairman position to two brothers at once');
+  await closeSheets(page);
+  await page.locator('#gtab-quick').click();
+  await page.locator('[data-quick="org"]').click();
+  const philCard = sheet(page).locator('.oc-card', { hasText: 'Philanthropy Chairman' });
+  await philCard.waitFor();
+  await page.waitForTimeout(500);
+  ok(await philCard.locator('.oc-name').count() === 2 && /Co-chairs/i.test(await philCard.innerText()), 'org chart: two brothers on a chairman position show as co-chairs', (await philCard.innerText()).replace(/\n/g, ' | '));
+  await philCard.scrollIntoViewIfNeeded();
+  await shot(page, 'phone-org-cochairs');
+  await closeSheets(page);
+  await toSettings(page);
+  await page.locator('#scene-settings [data-go="teams"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Philanthropy Chairman' }).locator('[data-edit]').click();
+  await sheet(page).locator('.held-by label.check', { hasText: 'Alex Admin' }).click();
+  await sheet(page).locator('[data-sheet="primary"]').click();
+  await sheet(page).locator('.rowi', { hasText: 'Philanthropy Chairman' }).filter({ hasNotText: 'Alex Admin' }).waitFor();
+  ok(/Blake Member/.test(await sheet(page).locator('.rowi', { hasText: 'Philanthropy Chairman' }).innerText()), 'positions: unticking a co-chair leaves the other');
+  { const { data } = await admin.from('profile_teams').select('profile_id, teams!inner(name)').eq('teams.name', 'Philanthropy Chairman'); ok(data?.length === 1, 'positions: the database holds exactly who was ticked'); }
   await closeSheets(page);
   // A link straight to the org chart opens it.
   await page.goto('about:blank');

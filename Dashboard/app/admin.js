@@ -106,12 +106,22 @@ const mover = (id, n, len) => `<span><button class="btn quiet small" type="butto
 const editRow = (id, title, sub, n, len) => `<li class="rowi"><span class="rowi-main"><span class="rowi-title">${title}</span>${sub ? `<span class="rowi-sub">${sub}</span>` : ''}</span>${mover(id, n, len)}<button class="btn small" type="button" data-edit="${id}">Edit</button></li>`;
 
 const CHART = [['head', 'Top (the chapter president)'], ['exec', 'Executive board'], ['chair', 'Chairmen']];
+// Who holds a position or is on a committee. Any number of brothers can: two on a
+// chairman position are its co-chairs.
+const holdersOf = (teamId) => S.profileTeams.filter((x) => x.team_id === teamId).map((x) => S.profiles.find((p) => p.id === x.profile_id)).filter(Boolean)
+  .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+const namesOf = (teamId) => holdersOf(teamId).map((p) => esc(p.name || 'No name yet')).join(', ');
 const chartLabel = (v) => ({ head: 'Top', exec: 'Executive board' })[v] || 'Chairmen';
 
 function openTeams() {
   const live = () => S.teams.filter((t) => !t.archived_at);
   listSheet('Positions and committees', () => {
-    const block = (kind, label) => { const l = live().filter((t) => t.kind === kind); return `<div class="fsec plain"><h3>${label}</h3><ul class="rows">${l.map((t, n) => editRow(t.id, esc(t.name), kind === 'position' ? `Org chart: ${chartLabel(t.chart)}` : '', n, l.length)).join('') || '<li class="muted small-text">None yet.</li>'}</ul><div class="btn-row"><button class="btn small" type="button" data-new="${kind}">+ Add a ${kind}</button></div></div>`; };
+    const sub = (t) => {
+      const who = namesOf(t.id);
+      if (t.kind !== 'position') return who || 'Nobody yet';
+      return `Org chart: ${chartLabel(t.chart)} · ${who || 'Open'}`;
+    };
+    const block = (kind, label) => { const l = live().filter((t) => t.kind === kind); return `<div class="fsec plain"><h3>${label}</h3><ul class="rows">${l.map((t, n) => editRow(t.id, esc(t.name), sub(t), n, l.length)).join('') || '<li class="muted small-text">None yet.</li>'}</ul><div class="btn-row"><button class="btn small" type="button" data-new="${kind}">+ Add a ${kind}</button></div></div>`; };
     return block('position', 'Positions') + block('committee', 'Committees');
   }, async (e, redraw) => {
     const up = e.target.closest('[data-up]')?.dataset.up, down = e.target.closest('[data-down]')?.dataset.down;
@@ -121,11 +131,21 @@ function openTeams() {
     const t = edit ? S.teams.find((x) => x.id === edit) : { kind, name: '', chart: 'chair' };
     const isPos = t.kind === 'position';
     const chartField = isPos ? field('Where it sits on the org chart', `<select class="input" name="chart">${CHART.map(([v, l]) => opt(v, l, t.chart || 'chair')).join('')}</select>`) : '';
-    simpleForm(edit ? `Edit ${t.kind}` : `New ${kind}`, field('Name', `<input class="input" name="name" maxlength="80" value="${esc(t.name)}" required>`) + chartField, async (f) => {
+    const had = new Set(edit ? holdersOf(edit).map((p) => p.id) : []);
+    const people = S.profiles.filter((p) => !p.disabled || had.has(p.id)).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const heldBy = `<div class="field" role="group" aria-labelledby="held-by-lab"><span class="lab" id="held-by-lab">${isPos ? 'Held by' : 'Members'}</span>
+      <div class="checks held-by">${people.map((p) => `<label class="check"><input type="checkbox" name="holders" data-multi value="${p.id}"${had.has(p.id) ? ' checked' : ''}><span>${esc(p.name || 'No name yet')}</span></label>`).join('') || '<span class="muted small-text">Nobody has signed in yet.</span>'}</div>
+      <span class="hint">${isPos ? 'Pick more than one for co-chairs. Holding a position lets a brother run event check-in.' : 'Brothers on this committee.'}</span></div>`;
+    simpleForm(edit ? `Edit ${t.kind}` : `New ${kind}`, field('Name', `<input class="input" name="name" maxlength="80" value="${esc(t.name)}" required>`) + chartField + heldBy, async (f) => {
       if (!f.name) throw new Error('Enter a name.');
       const chart = isPos ? { chart: f.chart || 'chair' } : {};
+      let id = edit;
       if (edit) await write(sb.from('teams').update({ name: f.name, ...chart }).eq('id', edit));
-      else await write(sb.from('teams').insert({ kind, name: f.name, sort: Math.max(0, ...live().map((x) => x.sort)) + 10, ...chart }));
+      else id = (await write(sb.from('teams').insert({ kind, name: f.name, sort: Math.max(0, ...live().map((x) => x.sort)) + 10, ...chart }).select('id').single())).id;
+      const want = new Set(f.holders || []);
+      const add = [...want].filter((p) => !had.has(p)), drop = [...had].filter((p) => !want.has(p));
+      if (add.length) await write(sb.from('profile_teams').insert(add.map((profile_id) => ({ profile_id, team_id: id }))));
+      if (drop.length) await write(sb.from('profile_teams').delete().eq('team_id', id).in('profile_id', drop));
     }, redraw, edit ? async () => { await write(sb.from('teams').update({ archived_at: new Date().toISOString() }).eq('id', edit)); } : null, 'It stays on old issues and goals but can no longer be picked.');
   });
 }

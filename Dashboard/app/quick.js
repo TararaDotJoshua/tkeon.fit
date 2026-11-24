@@ -139,7 +139,7 @@ function ocCard(t, big = false) {
   const { title, role } = titleOf(t.name);
   const people = holders(t.id);
   return `<div class="oc-card${big ? ' oc-head' : ''}${people.length ? '' : ' is-open'}">
-    <div class="oc-title">${esc(title)}</div>${role ? `<div class="oc-role">${esc(role)}</div>` : ''}
+    <div class="oc-title">${esc(title)}</div>${role ? `<div class="oc-role">${esc(role)}</div>` : people.length > 1 && (t.chart || 'chair') === 'chair' ? '<div class="oc-role">Co-chairs</div>' : ''}
     <div class="oc-people">${people.map((p) => `<span class="oc-person">${avatar(p, big ? '' : 'sm')}<span class="oc-name">${esc(p.name || 'No name yet')}${yr(p)}</span></span>`).join('') || '<span class="oc-open">Open</span>'}</div>
   </div>`;
 }
@@ -153,7 +153,7 @@ export function openOrgChart() {
     ? `${head.length ? `<section class="oc-tier oc-top">${head.map((t) => ocCard(t, true)).join('')}</section>` : ''}
        ${group('Executive board', exec)}
        ${group('Chairmen', chairs)}
-       ${isAdmin() ? '<p class="muted small-text oc-note">Admins: give brothers positions in Settings › Members. Move a position between the top, the executive board and the chairmen in Settings › Positions and committees.</p>' : ''}`
+       ${isAdmin() ? '<p class="muted small-text oc-note">Admins: in Settings › Positions and committees, pick who holds each position (two or more on a chairman position makes them co-chairs) and where it sits on the chart.</p>' : ''}`
     : '<p class="empty">No positions yet. An admin adds them in Settings.</p>';
   openSheet({ title: 'Org chart', html: `<div class="org">${html}</div>` });
 }
