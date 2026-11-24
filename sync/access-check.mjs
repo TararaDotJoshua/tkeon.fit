@@ -180,7 +180,7 @@ async function main() {
   refused(await anon.from('pnms').select('*'), 'visitor cannot read PNMs');
   refused(await anon.from('pnm_log').select('*'), 'visitor cannot read the PNM log');
   { const r = await anon.rpc('submit_interest', form({ p_email: 'pat.test@my.fit.edu' })); ok(/already_sent/.test(r.error?.message || ''), 'interest form: a double tap does not make two PNMs'); }
-  for (const [o, code] of [[{ p_email: 'pat@gmail.com' }, 'bad_email'], [{ p_student_id: '123456789' }, 'bad_student_id'], [{ p_phone: '555' }, 'bad_phone'], [{ p_hobbies: '' }, 'bad_hobbies'], [{ p_allergies: '  ' }, 'bad_allergies'], [{ p_contact_pref: 'carrier pigeon' }, 'bad_contact_pref'], [{ p_name: 'x'.repeat(300) }, 'bad_name']]) {
+  for (const [o, code] of [[{ p_email: 'pat@gmail.com' }, 'bad_email'], [{ p_student_id: '   ' }, 'bad_student_id'], [{ p_phone: '555' }, 'bad_phone'], [{ p_hobbies: '' }, 'bad_hobbies'], [{ p_allergies: '  ' }, 'bad_allergies'], [{ p_contact_pref: 'carrier pigeon' }, 'bad_contact_pref'], [{ p_name: 'x'.repeat(300) }, 'bad_name']]) {
     const r = await anon.rpc('submit_interest', form({ ...o, p_email: o.p_email || `v${code}.test@fit.edu` }));
     ok(new RegExp(code).test(r.error?.message || ''), `interest form: refuses ${code.replace('bad_', 'a bad ').replace('_', ' ')}`);
   }

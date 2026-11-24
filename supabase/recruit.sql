@@ -56,7 +56,7 @@ create table if not exists public.pnms (
   phone           text check (char_length(phone) <= 30),
   email           text check (char_length(email) <= 200),
   contact_pref    text check (contact_pref in ('phone', 'email')),
-  student_id      text check (student_id ~ '^[0-9]{9}$'),           -- the 900 number
+  student_id      text check (char_length(student_id) between 1 and 30), -- the 900 number, as typed
   major           text check (char_length(major) <= 120),
   hobbies         text check (char_length(hobbies) <= 2000),
   social          text check (char_length(social) <= 120),
@@ -76,6 +76,12 @@ create table if not exists public.pnms (
 );
 create index if not exists pnms_term_idx on public.pnms (term, stage);
 create index if not exists pnms_created_idx on public.pnms (created_at);
+
+-- The 900 number used to have to be 9 digits starting with 900. Some real ones
+-- don't (904...), so it's now taken as typed. This swaps the old rule on a
+-- table that already exists.
+alter table public.pnms drop constraint if exists pnms_student_id_check;
+alter table public.pnms add constraint pnms_student_id_check check (char_length(student_id) between 1 and 30);
 
 -- Contacts, notes, stage changes and assignments, newest last.
 create table if not exists public.pnm_log (
@@ -187,7 +193,7 @@ declare
   v_token  text := encode(extensions.gen_random_bytes(12), 'hex');
   v_phone  text := regexp_replace(coalesce(p_phone, ''), '[^0-9+]', '', 'g');
   v_email  text := lower(trim(coalesce(p_email, '')));
-  v_sid    text := regexp_replace(coalesce(p_student_id, ''), '[^0-9]', '', 'g');
+  v_sid    text := btrim(coalesce(p_student_id, ''));
   v_met    text := trim(coalesce(p_met_by, ''));
   v_main   uuid;
   v_path   text;
@@ -203,7 +209,7 @@ begin
   if char_length(regexp_replace(v_phone, '[^0-9]', '', 'g')) not between 10 and 15 then raise exception 'bad_phone'; end if;
   if not private.fit_email(v_email) then raise exception 'bad_email'; end if;
   if p_contact_pref not in ('phone', 'email') then raise exception 'bad_contact_pref'; end if;
-  if v_sid !~ '^900[0-9]{6}$' then raise exception 'bad_student_id'; end if;
+  if char_length(v_sid) not between 1 and 30 then raise exception 'bad_student_id'; end if;
   if char_length(trim(coalesce(p_major, ''))) not between 1 and 120 then raise exception 'bad_major'; end if;
   if char_length(trim(coalesce(p_hobbies, ''))) not between 1 and 2000 then raise exception 'bad_hobbies'; end if;
   if char_length(trim(coalesce(p_allergies, ''))) not between 1 and 300 then raise exception 'bad_allergies'; end if;

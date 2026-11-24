@@ -411,7 +411,7 @@ export function openPnmForm(p, after) {
       <div class="fsec"><h3>More</h3>
         ${field('Email', `<input class="input" name="email" type="email" inputmode="email" autocapitalize="none" maxlength="200" value="${esc(v.email || '')}">`)}
         ${field('Prefers', `<select class="input" name="contact_pref">${opt('', '—', v.contact_pref || '')}${opt('phone', 'Phone', v.contact_pref || '')}${opt('email', 'Email', v.contact_pref || '')}</select>`)}
-        ${field('900 number', `<input class="input" name="student_id" inputmode="numeric" maxlength="11" value="${esc(v.student_id || '')}">`)}
+        ${field('900 number', `<input class="input" name="student_id" maxlength="30" value="${esc(v.student_id || '')}">`)}
         ${field('Major', `<input class="input" name="major" maxlength="120" value="${esc(v.major || '')}">`)}
         ${field('Hobbies', `<textarea class="input" name="hobbies" maxlength="2000">${esc(v.hobbies || '')}</textarea>`)}
         ${field('Social media', `<input class="input" name="social" autocapitalize="none" maxlength="120" value="${esc(v.social || '')}" placeholder="@handle">`)}
@@ -422,9 +422,8 @@ export function openPnmForm(p, after) {
       </div>`,
     onPrimary: async () => {
       const f = formData(s.body);
-      const sid = f.student_id.replace(/\D/g, '');
+      const sid = (f.student_id || '').trim();
       if (!f.name) return s.error('Enter his name.');
-      if (sid && !/^\d{9}$/.test(sid)) return s.error('A 900 number is 9 digits.');
       const row = { name: f.name, phone: f.phone || null, email: f.email || null, contact_pref: f.contact_pref || null, student_id: sid || null,
         major: f.major || null, hobbies: f.hobbies || null, social: f.social || null, allergies: f.allergies || null, term: f.term };
       let id = p?.id;
