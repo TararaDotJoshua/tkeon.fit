@@ -10,6 +10,7 @@
 // private.scroll, with admin.test@fit.edu listed in private.settings admin_emails.
 
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
 const URL_ = process.env.API_URL || process.env.SUPABASE_URL;
@@ -228,11 +229,37 @@ async function main() {
   { const { data } = await anon.from('activity').select('id').eq('entity_id', pat.id); ok(data.length === 0, 'PNM changes never reach the public activity log'); }
   allowed(await rec.from('pnms').delete().eq('id', added.data.id).select(), 'recruiter can delete a PNM');
 
+  // PNM to-dos.
+  refused(await anon.from('pnm_todos').select('*'), 'visitor cannot read PNM to-dos');
+  { // Running pnm-todos.sql again turns a leftover "Next step" into a to-do, once.
+    execFileSync('docker', ['exec', '-i', process.env.DB_CONTAINER || 'supabase_db_tkeon-local', 'psql', '-U', 'postgres', '-d', 'postgres', '-q', '-v', 'ON_ERROR_STOP=1'],
+      { input: readFileSync(new URL('../supabase/pnm-todos.sql', import.meta.url), 'utf8'), stdio: ['pipe', 'ignore', 'pipe'] });
+    const { data } = await rec.from('pnm_todos').select('title, due').eq('pnm_id', pat.id);
+    const { data: pp } = await rec.from('pnms').select('next_step, next_date').eq('id', pat.id).single();
+    ok(data.length === 1 && data[0].title === 'Invite to cookout' && data[0].due === '2026-12-01' && pp.next_step === null && pp.next_date === null, 'the old "Next step" becomes his first to-do, and is cleared', JSON.stringify({ data, pp })); }
+  const todo = await rec.from('pnm_todos').insert({ pnm_id: pat.id, title: '  Get him to bid night  ', due: '2026-12-05', assignee: m1.id }).select().single();
+  allowed(todo, 'recruiter adds a to-do and gives it to himself');
+  ok(todo.data?.title === 'Get him to bid night' && todo.data?.created_by === m1.id && !todo.data?.done, 'a new to-do is tidied up and records who added it');
+  refused(await rec.from('pnm_todos').insert({ pnm_id: pat.id, title: `${TAG} forged`, created_by: ad.id }).select(), 'a to-do cannot claim someone else added it');
+  { const r = await rec.from('pnm_todos').insert({ pnm_id: pat.id, title: `${TAG} to a stranger`, assignee: crypto.randomUUID() }).select();
+    ok(/assignee_not_recruiter/.test(r.error?.message || ''), 'a to-do can only go to a brother with recruiting access'); }
+  refused(await rec.from('pnm_todos').update({ pnm_id: added.data.id }).eq('id', todo.data.id).select(), 'a to-do cannot be moved to another PNM');
+  refused(await rec.from('pnm_todos').update({ done_by: ad.id }).eq('id', todo.data.id).select(), 'nobody can say someone else ticked a to-do');
+  { const r = await rec.from('pnm_todos').update({ done: true }).eq('id', todo.data.id).select().single();
+    ok(!r.error && r.data.done && r.data.done_by === m1.id && Boolean(r.data.done_at), 'ticking a to-do records who and when');
+    const { data } = await rec.from('pnm_log').select('kind, actor, note').eq('pnm_id', pat.id).eq('kind', 'todo');
+    ok(data.length === 1 && data[0].actor === m1.id && data[0].note === 'Get him to bid night', 'ticking a to-do goes in his history'); }
+  { const r = await rec.from('pnm_todos').update({ done: false }).eq('id', todo.data.id).select().single();
+    ok(!r.error && !r.data.done && r.data.done_at === null && r.data.done_by === null, 'unticking a to-do clears who and when'); }
+  allowed(await rec.from('pnm_todos').delete().eq('id', todo.data.id).select(), 'recruiter can delete a to-do');
+
   allowed(await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: true }), 'admin turns the recruiter\'s account off');
   refused(await rec.from('pnms').select('*'), 'a turned-off account loses recruitment access');
   await adminUser.rpc('admin_set_member', { p_id: m1.id, p_is_admin: false, p_disabled: false });
   allowed(await adminUser.rpc('admin_set_recruiter', { p_id: m1.id, p_on: false }), 'admin turns recruitment access back off');
   refused(await rec.from('pnms').select('*'), 'without access again, he cannot read PNMs');
+  refused(await rec.from('pnm_todos').select('*'), 'without access, he cannot read PNM to-dos');
+  refused(await rec.from('pnm_todos').insert({ pnm_id: pat.id, title: `${TAG} sneaky` }).select(), 'without access, he cannot add a PNM to-do');
 
   // Deletion one year after a PNM was entered.
   refused(await rec.rpc('purge_old_pnms'), 'members cannot run the deletion themselves');
