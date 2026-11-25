@@ -107,3 +107,42 @@ test('a Sheet not shared with the robot says how to fix it', async () => {
   const fake = async (url) => ({ ok: /oauth2/.test(url), status: /oauth2/.test(url) ? 200 : 403, json: async () => (/oauth2/.test(url) ? { access_token: 't' } : { error: { message: 'The caller does not have permission' } }) });
   await assert.rejects(sheetRows(SHEET_LINK, KEY, fake), /shared with the robot's email as a Viewer/);
 });
+
+test('a network blip is tried again, and the run still reads the tab', async () => {
+  let blips = 0;
+  const fake = async (url) => {
+    const json = (b) => ({ ok: true, status: 200, json: async () => b });
+    if (/oauth2/.test(url) && blips++ === 0) throw new TypeError('fetch failed', { cause: { code: 'ECONNRESET' } });
+    if (/oauth2/.test(url)) return json({ access_token: 'tok' });
+    if (/fields=sheets/.test(url)) return json({ sheets: [{ properties: { sheetId: 777, title: 'Budget' } }] });
+    return json({ values: [['Chapter Expenses', 'Budgeted', 'Amount Spent'], ['Rush', 400, 5]] });
+  };
+  const rows = await sheetRows(SHEET_LINK, KEY, fake, { waitMs: 0 });
+  assert.equal(blips, 2, 'the sign-in was tried a second time');
+  assert.deepEqual(parseBudget(rows).map((l) => l.name), ['Rush']);
+});
+
+test('a network that stays down says why, without the link', async () => {
+  let tries = 0;
+  const fake = async () => { tries++; throw new TypeError('fetch failed', { cause: { code: 'ENOTFOUND' } }); };
+  await assert.rejects(sheetRows(SHEET_LINK, KEY, fake, { waitMs: 0 }), (e) => e.message === 'fetch failed (ENOTFOUND)');
+  assert.equal(tries, 3);
+});
+
+test('Google busy (503) is tried again; not shared (403) is not', async () => {
+  const seen = [];
+  const busyOnce = async (url) => {
+    seen.push(url);
+    const json = (b, status = 200) => ({ ok: status < 400, status, json: async () => b });
+    if (/oauth2/.test(url)) return json({ access_token: 'tok' });
+    if (/fields=sheets/.test(url)) return seen.filter((u) => /fields=sheets/.test(u)).length === 1 ? json({}, 503) : json({ sheets: [{ properties: { sheetId: 777, title: 'B' } }] });
+    return json({ values: [['Chapter Expenses', 'Budgeted', 'Amount Spent'], ['Rush', 1, 1]] });
+  };
+  await sheetRows(SHEET_LINK, KEY, busyOnce, { waitMs: 0 });
+  assert.equal(seen.filter((u) => /fields=sheets/.test(u)).length, 2);
+
+  let calls = 0;
+  const notShared = async (url) => { calls++; return { ok: /oauth2/.test(url), status: /oauth2/.test(url) ? 200 : 403, json: async () => (/oauth2/.test(url) ? { access_token: 't' } : { error: { message: 'No' } }) }; };
+  await assert.rejects(sheetRows(SHEET_LINK, KEY, notShared, { waitMs: 0 }), /shared with the robot's email/);
+  assert.equal(calls, 2, 'sign-in once, Sheet once');
+});
