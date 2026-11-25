@@ -31,6 +31,31 @@ export function signedAssertion(key, now = Math.floor(Date.now() / 1000)) {
   return `${head}.${claim}.${sig}`;
 }
 
+// A network blip (DNS, a dropped connection, a timeout) makes fetch throw
+// "fetch failed" before Google answers; one such blip failed a run on Nov 25.
+// Those, and Google's 429 and 5xx, get two more tries a moment apart. A real
+// answer such as 403 (not shared) is returned at once.
+const RETRY_STATUS = new Set([429, 500, 502, 503, 504]);
+export async function fetchRetry(fetchImpl, url, opts, { tries = 3, waitMs = 2000 } = {}) {
+  for (let n = 1; ; n++) {
+    try {
+      // A fresh timeout each try: an AbortSignal that has fired stays aborted.
+      const res = await fetchImpl(url, { ...opts, signal: AbortSignal.timeout(20000) });
+      if (!RETRY_STATUS.has(res.status) || n >= tries) return res;
+    } catch (e) {
+      if (n >= tries) throw netError(e);
+    }
+    await new Promise((r) => setTimeout(r, waitMs * n));
+  }
+}
+
+// "fetch failed" alone says nothing; add the cause's code (e.g. ECONNRESET),
+// which never holds the Sheet's link or the key.
+function netError(e) {
+  const code = e?.cause?.code || e?.cause?.name || e?.name;
+  return code && !String(e.message).includes(code) ? new Error(`${e.message} (${code})`) : e;
+}
+
 async function getJson(res, what) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -41,28 +66,27 @@ async function getJson(res, what) {
   return body;
 }
 
-export async function accessToken(key, fetchImpl = fetch) {
-  const res = await fetchImpl(key.token_uri || 'https://oauth2.googleapis.com/token', {
+export async function accessToken(key, fetchImpl = fetch, retry) {
+  const res = await fetchRetry(fetchImpl, key.token_uri || 'https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: signedAssertion(key) }),
-    signal: AbortSignal.timeout(20000),
-  });
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: signedAssertion(key) }).toString(),
+  }, retry);
   return (await getJson(res, 'Google sign-in for the robot failed')).access_token;
 }
 
 /** Every cell of one tab, as rows of values (numbers stay numbers). */
-export async function sheetRows(url, keyJson, fetchImpl = fetch) {
+export async function sheetRows(url, keyJson, fetchImpl = fetch, retry) {
   const key = readKey(keyJson);
   const { id, gid } = sheetFromUrl(url);
-  const token = await accessToken(key, fetchImpl);
-  const auth = { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20000) };
+  const token = await accessToken(key, fetchImpl, retry);
+  const auth = { headers: { Authorization: `Bearer ${token}` } };
   const api = `https://sheets.googleapis.com/v4/spreadsheets/${id}`;
-  const meta = await getJson(await fetchImpl(`${api}?fields=sheets.properties(sheetId,title)`, auth), 'Could not open the Sheet');
+  const meta = await getJson(await fetchRetry(fetchImpl, `${api}?fields=sheets.properties(sheetId,title)`, auth, retry), 'Could not open the Sheet');
   const tabs = (meta.sheets || []).map((s) => s.properties);
   const tab = gid == null ? tabs[0] : tabs.find((t) => t.sheetId === gid);
   if (!tab) throw new Error('The tab in BUDGET_SHEET_URL (its #gid=) is not in the Sheet anymore.');
   const range = encodeURIComponent(`'${tab.title.replace(/'/g, "''")}'`);
-  const vals = await getJson(await fetchImpl(`${api}/values/${range}?valueRenderOption=UNFORMATTED_VALUE&majorDimension=ROWS`, auth), 'Could not read the budget tab');
+  const vals = await getJson(await fetchRetry(fetchImpl, `${api}/values/${range}?valueRenderOption=UNFORMATTED_VALUE&majorDimension=ROWS`, auth, retry), 'Could not read the budget tab');
   return vals.values || [];
 }
